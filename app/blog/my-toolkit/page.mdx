@@ -1,0 +1,85 @@
+export const metadata = {
+  title: 'My Toolkit: The Apps and Languages I Use Every Day',
+  description:
+    'A breakdown of the design tools, code editors, programming languages and web services that make up my daily workflow.',
+  alternates: {
+    canonical: '/blog/my-toolkit',
+  },
+}
+
+# My Toolkit
+
+Every designer and developer has a set of tools they reach for every single day. Here's mine — the apps, languages, and services I rely on to design Discord servers, build bots, and manage communities.
+
+---
+
+## Design
+
+### [Affinity Designer & Affinity Photo](https://affinity.serif.com)
+
+My go-to suite for everything visual. Affinity Designer handles vector work — icons, server banners, role badges — while Affinity Photo takes care of photo editing and compositing. It's a one-time purchase with no subscription, which makes it a no-brainer over Adobe's pricing model.
+
+- Non-destructive editing
+- Export presets optimised for Discord (PNG, WebP)
+- Pixel-perfect at any scale
+
+### [Adobe Photoshop](https://www.adobe.com/products/photoshop.html)
+
+When I need access to a specific filter, a smart object workflow, or a file that someone sends me in PSD format, Photoshop is still the industry standard. I use it occasionally alongside Affinity for those edge cases.
+
+---
+
+## Code
+
+### [Visual Studio Code](https://code.visualstudio.com)
+
+Everything I write lives in VS Code. Lightweight, endlessly extensible, and free. A few extensions I can't work without:
+
+- **Prettier** — automatic code formatting
+- **ESLint** — catches errors before I do
+- **GitHub Copilot** — AI pair programmer
+- **Tailwind CSS IntelliSense** — autocomplete for utility classes
+
+### [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+
+The language that powers Discord bots (via [discord.js](https://discord.js.org)), web frontends, and automation scripts. Most of my bot logic is written in JS/Node.js — event handlers, permission systems, slash commands, embed builders.
+
+```js
+client.on('guildMemberAdd', (member) => {
+  const channel = member.guild.systemChannel
+  channel?.send(`Welcome to the server, ${member}! 👋`)
+})
+```
+
+### [Python](https://www.python.org)
+
+Python is my scripting language of choice. I use it for data processing, utility scripts, and quick automations. Clean syntax, massive ecosystem, and the go-to for any task where I need results fast.
+
+```python
+import discord
+
+@bot.command()
+async def ping(ctx):
+    await ctx.send(f'Pong! {round(bot.latency * 1000)}ms')
+```
+
+---
+
+## Web Services
+
+### [Discohook](https://discohook.app)
+
+The fastest way to build and preview Discord embeds without writing a single line of code. I use Discohook to prototype message layouts, webhook payloads, and announcement templates before deploying them through a bot.
+
+Key features:
+- Visual embed builder with live preview
+- JSON export → paste directly into bot code
+- Supports buttons, select menus and components
+
+### [GitHub](https://github.com)
+
+Where all my code lives. Version control, collaboration, and deployment — GitHub is the backbone of every project I work on. Public repos for open-source bots, private repos for client work.
+
+---
+
+That's the core of my daily toolkit. It evolves constantly, but these tools have stayed consistent because they're fast, reliable, and let me focus on the work rather than fighting the software.
