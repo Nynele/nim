@@ -73,6 +73,47 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
     id: 'work-roe',
     verified: true,
   },
+  {
+    company: 'Melias',
+    title: 'Discord Community Manager',
+    start: '2025',
+    end: 'Present',
+    link: 'https://github.com/Nynele',
+    id: 'work-melias',
+  },
+  {
+    company: 'OWN',
+    title: 'Discord Community Manager',
+    start: '2025',
+    end: '2025',
+    link: 'https://github.com/Nynele',
+    id: 'work-own',
+  },
+  {
+    company: 'ByteMate',
+    title: 'Discord Designer',
+    start: '2025',
+    end: '2025',
+    link: 'https://github.com/Nynele',
+    id: 'work-bytemate',
+  },
+  {
+    company: 'Metacraft Network',
+    title: 'Discord Server Setup',
+    start: '2025',
+    end: '2025',
+    link: 'https://github.com/Nynele',
+    id: 'work-metacraft',
+  },
+  {
+    company: 'Dawnlands',
+    title: 'Moderator',
+    start: '2023',
+    end: '2025',
+    link: 'https://discord.gg/8P3p3HBJ8w',
+    id: 'work-dawnlands',
+    verified: true,
+  },
 ]
 
 export const BLOG_POSTS: BlogPost[] = [
@@ -90,4 +131,4 @@ export const SOCIAL_LINKS = {
   discord: 'https://discord.com/users/799251427839049818',
 };
 
-export const EMAIL = 'nynele@example.com'
+export const EMAIL = 'nyneletwitch@gmail.com'
