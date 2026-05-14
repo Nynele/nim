@@ -42,10 +42,10 @@ export const PROJECTS: Project[] = [
     verified: true,
   },
   {
-    name: 'Rules of Engagement',
+    name: 'Rules of Engagement: The Grey State',
     description:
       'Designing and scaling high-performance server infrastructure. Advanced permissions and custom bot development for a major community.',
-    link: 'https://discord.gg/roe',
+    link: 'https://discord.gg/rulesofengagement',
     images: [
       'https://cdn.discordapp.com/icons/1283296063020863518/f256a35a2318137d853acc40843cbb94.webp?size=1024',
     ],
@@ -69,7 +69,7 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
     title: 'Discord Designer',
     start: '2023',
     end: 'Present',
-    link: 'https://discord.gg/roe',
+    link: 'https://discord.gg/rulesofengagement',
     id: 'work-roe',
     verified: true,
   },
