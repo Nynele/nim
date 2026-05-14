@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
-import { ThemeProvider } from 'next-themes'
+import MuiThemeProvider from './theme-provider'
+import InitColorSchemeScript from '@mui/material/InitColorSchemeScript'
+import { Roboto } from 'next/font/google'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -10,25 +12,22 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nynele.vercel.app/'),
+  metadataBase: new URL('https://nim-fawn.vercel.app/'),
   alternates: {
     canonical: '/'
   },
   title: {
-    default: 'Nynele - Discord Designer & Community Manager',
+    default: 'Nynele - Portfolio',
     template: '%s | Nynele'
   },
-  description: 'Nynele — Proven expertise in designing and scaling high-performance server infrastructure. Advanced permissions and custom bot development.',
-}
+  description: 'Nynele - Discord Designer & Community Manager. Expertise in server infrastructure, permissions, and community engagement.',
+};
 
-const geist = Geist({
-  variable: '--font-geist',
+const roboto = Roboto({
+  weight: ['300', '400', '500', '700', '900'],
   subsets: ['latin'],
-})
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-roboto',
 })
 
 export default function RootLayout({
@@ -38,17 +37,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geist.variable} ${geistMono.variable} h-dvh overflow-hidden bg-white tracking-tight antialiased dark:bg-zinc-950`}
-      >
-        <ThemeProvider
-          enableSystem={true}
-          attribute="class"
-          storageKey="theme"
-          defaultTheme="system"
-        >
-          {children}
-        </ThemeProvider>
+      <body className={roboto.variable}>
+        <InitColorSchemeScript attribute="data-mui-color-scheme" defaultMode="system" />
+        <MuiThemeProvider>
+          <div className="flex min-h-screen w-full flex-col">
+            {children}
+          </div>
+        </MuiThemeProvider>
       </body>
     </html>
   )
