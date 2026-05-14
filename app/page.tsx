@@ -1,270 +1,652 @@
-'use client'
-import { motion } from 'motion/react'
-import { XIcon } from 'lucide-react'
-import { Spotlight } from '@/components/ui/spotlight'
-import { Magnetic } from '@/components/ui/magnetic'
+'use client';
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'motion/react';
 import {
-  MorphingDialog,
-  MorphingDialogTrigger,
-  MorphingDialogContent,
-  MorphingDialogClose,
-  MorphingDialogContainer,
-} from '@/components/ui/morphing-dialog'
-import Link from 'next/link'
-import { AnimatedBackground } from '@/components/ui/animated-background'
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Button,
+  Chip,
+  Card,
+  CardActionArea,
+  CardContent,
+  Avatar,
+  Box,
+  Container,
+  useColorScheme,
+  Skeleton,
+} from '@mui/material';
+
+import {
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
+  SettingsBrightness as SystemModeIcon,
+  MusicNote as MusicNoteIcon,
+  Verified as VerifiedIcon,
+  Email as EmailIcon,
+  ArrowOutward as ArrowOutwardIcon,
+  Devices as DevicesIcon,
+  Computer as ComputerIcon,
+  Smartphone as SmartphoneIcon,
+  Language as WebIcon,
+} from '@mui/icons-material';
+
 import {
   PROJECTS,
   WORK_EXPERIENCE,
   BLOG_POSTS,
   EMAIL,
   SOCIAL_LINKS,
-} from './data'
+} from './data';
 
-const VARIANTS_CONTAINER = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-}
-
-const VARIANTS_SECTION = {
-  hidden: { opacity: 0, y: 20, filter: 'blur(8px)' },
-  visible: { opacity: 1, y: 0, filter: 'blur(0px)' },
-}
-
-const TRANSITION_SECTION = {
-  duration: 0.3,
-}
-
-type ProjectVideoProps = {
-  src: string
-}
-
-function ProjectVideo({ src }: ProjectVideoProps) {
+// ── Scroll Animation Wrapper ───────────────────────────────────────────
+function ScrollReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
-    <MorphingDialog
-      transition={{
-        type: 'spring',
-        bounce: 0,
-        duration: 0.3,
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.5, delay, ease: [0.2, 0.65, 0.3, 0.9] }}
     >
-      <MorphingDialogTrigger>
-        <video
-          src={src}
-          autoPlay
-          loop
-          muted
-          className="aspect-video w-full cursor-zoom-in rounded-xl"
-        />
-      </MorphingDialogTrigger>
-      <MorphingDialogContainer>
-        <MorphingDialogContent className="relative aspect-video rounded-2xl bg-zinc-50 p-1 ring-1 ring-zinc-200/50 ring-inset dark:bg-zinc-950 dark:ring-zinc-800/50">
-          <video
-            src={src}
-            autoPlay
-            loop
-            muted
-            className="aspect-video h-[50vh] w-full rounded-xl md:h-[70vh]"
-          />
-        </MorphingDialogContent>
-        <MorphingDialogClose
-          className="fixed top-6 right-6 h-fit w-fit rounded-full bg-white p-1"
-          variants={{
-            initial: { opacity: 0 },
-            animate: {
-              opacity: 1,
-              transition: { delay: 0.3, duration: 0.1 },
-            },
-            exit: { opacity: 0, transition: { duration: 0 } },
-          }}
-        >
-          <XIcon className="h-5 w-5 text-zinc-500" />
-        </MorphingDialogClose>
-      </MorphingDialogContainer>
-    </MorphingDialog>
-  )
+      {children}
+    </motion.div>
+  );
 }
 
-function MagneticSocialLink({
-  children,
-  link,
-}: {
-  children: React.ReactNode
-  link: string
-}) {
+// ── Theme Switch ───────────────────────────────────────────────────────
+function ThemeSwitch() {
+  const { mode, setMode } = useColorScheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    // Fix for scroll jump on refresh
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+  }, []);
+
+  if (!mounted) return <IconButton disabled><SystemModeIcon /></IconButton>;
+
+  const handleToggle = () => {
+    if (mode === 'light') setMode('dark');
+    else if (mode === 'dark') setMode('system');
+    else setMode('light');
+  };
+
   return (
-    <Magnetic springOptions={{ bounce: 0 }} intensity={0.3}>
-      <a
-        href={link}
-        className="group relative inline-flex shrink-0 items-center gap-[1px] rounded-full bg-zinc-100 px-2.5 py-1 text-sm text-black transition-colors duration-200 hover:bg-zinc-950 hover:text-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
-      >
-        {children}
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 15 15"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-3 w-3"
-        >
-          <path
-            d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9.00001C12 9.27615 11.7761 9.50001 11.5 9.50001C11.2239 9.50001 11 9.27615 11 9.00001V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z"
-            fill="currentColor"
-            fillRule="evenodd"
-            clipRule="evenodd"
-          ></path>
-        </svg>
-      </a>
-    </Magnetic>
-  )
+    <IconButton onClick={handleToggle} color="inherit">
+      {mode === 'light' ? <LightModeIcon /> : mode === 'dark' ? <DarkModeIcon /> : <SystemModeIcon />}
+    </IconButton>
+  );
 }
 
+
+
+// ── Music Image Fallback ──────────────────────────────────────────────
+function MusicFallback() {
+  return (
+    <Box sx={{
+      width: '100%', height: '100%', position: 'relative', overflow: 'hidden',
+      background: 'linear-gradient(135deg, var(--mui-palette-primary-main) 0%, #1a1a2e 100%)',
+    }}>
+      <Box sx={{
+        position: 'absolute', top: -10, right: -10, width: 60, height: 60,
+        borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)',
+        animation: 'spin 12s linear infinite',
+        '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
+      }} />
+      <Box sx={{
+        position: 'absolute', bottom: 10, left: 10, width: 20, height: 20,
+        borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.08)',
+        animation: 'float 3s ease-in-out infinite',
+        '@keyframes float': { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-6px)' } },
+      }} />
+      <MusicNoteIcon sx={{
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        fontSize: 20, color: 'rgba(255,255,255,0.2)',
+      }} />
+    </Box>
+  );
+}
+
+// ── Activity Icon with Fallback ────────────────────────────────────────
+function ActivityIcon({ src, type }: { src: string | null; type: number }) {
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return <MusicFallback />;
+  }
+
+  return (
+    <Box
+      component="img"
+      src={src}
+      onError={() => setError(true)}
+      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+    />
+  );
+}
+
+// ── VR Headset Icon ──────────────────────────────────────────────────
+function VrIcon({ sx }: { sx?: any }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      sx={{ ...sx, fill: 'currentColor' }}
+    >
+      <path d="M4 10.5A3.5 3.5 0 0 1 7.5 7h9A3.5 3.5 0 0 1 20 10.5V14a3 3 0 0 1-3 3h-.18a3 3 0 0 1-2.95-2.46l-.2-1.04a.75.75 0 0 0-.74-.6h-1.86a.75.75 0 0 0-.74.6l-.2 1.04A3 3 0 0 1 7.18 17H7a3 3 0 0 1-3-3v-3.5Zm2 0V14a1 1 0 0 0 1 1h.18a1 1 0 0 0 .98-.82l.2-1.04a2.75 2.75 0 0 1 2.7-2.24h1.86a2.75 2.75 0 0 1 2.7 2.24l.2 1.04a1 1 0 0 0 .98.82H17a1 1 0 0 0 1-1v-3.5A1.5 1.5 0 0 0 16.5 9h-9A1.5 1.5 0 0 0 6 10.5Z" />
+    </Box>
+  );
+}
+
+// ── Animated Background ───────────────────────────────────────────────
+function AnimatedBackground() {
+  return (
+    <Box sx={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      zIndex: -1, overflow: 'hidden', pointerEvents: 'none',
+      bgcolor: 'background.default'
+    }}>
+      {/* Primary Blob */}
+      <Box sx={{
+        position: 'absolute', top: '-10%', left: '-10%', width: '60%', height: '60%',
+        borderRadius: '50%', filter: 'blur(120px)', opacity: 0.15,
+        background: 'radial-gradient(circle, var(--mui-palette-primary-main) 0%, transparent 70%)',
+        animation: 'blobFloat 20s ease-in-out infinite alternate',
+        '@keyframes blobFloat': {
+          '0%': { transform: 'translate(0, 0) scale(1)' },
+          '100%': { transform: 'translate(15%, 10%) scale(1.1)' }
+        }
+      }} />
+      {/* Secondary Blob */}
+      <Box sx={{
+        position: 'absolute', bottom: '-15%', right: '-5%', width: '50%', height: '50%',
+        borderRadius: '50%', filter: 'blur(100px)', opacity: 0.1,
+        background: 'radial-gradient(circle, var(--mui-palette-secondary-main, #9c27b0) 0%, transparent 70%)',
+        animation: 'blobFloatRev 25s ease-in-out infinite alternate',
+        '@keyframes blobFloatRev': {
+          '0%': { transform: 'translate(0, 0) scale(1.1)' },
+          '100%': { transform: 'translate(-10%, -15%) scale(1)' }
+        }
+      }} />
+      {/* Subtle Dot Grid Overlay */}
+      <Box sx={{
+        position: 'absolute', inset: 0, opacity: 0.03,
+        backgroundImage: 'radial-gradient(var(--mui-palette-text-primary) 1px, transparent 1px)',
+        backgroundSize: '32px 32px',
+      }} />
+    </Box>
+  );
+}
+
+// ── Local Time Widget ──────────────────────────────────────────────────
+function LocalTime() {
+  const [time, setTime] = useState('');
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      setTime(now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Europe/Madrid'
+      }));
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <Box sx={{ opacity: 0.6 }}>
+      <Typography variant="caption" sx={{ fontWeight: 800, color: 'primary.main', fontSize: '0.6rem', letterSpacing: 1, display: 'block' }}>
+        LOCAL TIME
+      </Typography>
+      <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+        {time} CET
+      </Typography>
+    </Box>
+  );
+}
+
+// ── Top App Bar ────────────────────────────────────────────────────────
+function TopAppBar() {
+  return (
+    <AppBar position="sticky" color="transparent" elevation={0} sx={{ backdropFilter: 'blur(12px)', borderBottom: 1, borderColor: 'divider' }}>
+      <Toolbar sx={{ justifyContent: 'space-between', maxWidth: 'lg', width: '100%', mx: 'auto' }}>
+        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
+          Nynele
+        </Typography>
+        <ThemeSwitch />
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+// ── Project Image with Skeleton ────────────────────────────────────────
+function ProjectImage({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+
+  if (error) {
+    return (
+      <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'action.hover' }}>
+        <MusicNoteIcon sx={{ fontSize: 48, opacity: 0.3 }} />
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      component="img"
+      src={src}
+      alt={alt}
+      onError={() => setError(true)}
+      sx={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        display: 'block',
+        bgcolor: 'action.hover'
+      }}
+    />
+  );
+}
+
+// ── Discord Profile Widget ─────────────────────────────────────────────
+function DiscordProfile() {
+  const [data, setData] = useState<any>(null);
+  const DISCORD_ID = '799251427839049818';
+
+  const fetchData = useCallback(async () => {
+    // Discord Lanyard
+    try {
+      const res = await fetch(`https://api.lanyard.rest/v1/users/${DISCORD_ID}`);
+      const json = await res.json();
+      if (json.success) setData(json.data);
+    } catch (e) { console.error(e); }
+  }, [DISCORD_ID]);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  if (!data) {
+    return (
+      <Card elevation={0} sx={{
+        p: 2.5,
+        borderRadius: '28px',
+        border: 1,
+        borderColor: 'divider',
+        width: { xs: '100%', md: 360 },
+        minHeight: 450,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+          <Skeleton variant="circular" width={72} height={72} />
+          <Box sx={{ flexGrow: 1 }}>
+            <Skeleton variant="text" width="80%" height={24} />
+            <Skeleton variant="text" width="50%" height={16} />
+          </Box>
+        </Box>
+        <Skeleton variant="rectangular" width="100%" height={140} sx={{ borderRadius: '16px' }} />
+        <Skeleton variant="rectangular" width="100%" height={60} sx={{ borderRadius: '16px' }} />
+        <Skeleton variant="rectangular" width="100%" height={50} sx={{ borderRadius: '12px', mt: 'auto' }} />
+      </Card>
+    );
+  }
+
+  const statusColors: any = { online: '#43b581', idle: '#faa61a', dnd: '#f04747', offline: '#747f8d' };
+  const user = data.discord_user;
+
+  // Avatar Decoration URL
+  const decorationUrl = user.avatar_decoration_data
+    ? `https://cdn.discordapp.com/avatar-decoration-presets/${user.avatar_decoration_data.asset}.png`
+    : null;
+
+  const AVATAR_SIZE = 72;
+  const DECO_SIZE = AVATAR_SIZE * 1.2;
+
+  return (
+    <Card elevation={0} sx={{
+      p: 2.5,
+      borderRadius: '28px',
+      border: 1,
+      borderColor: 'divider',
+      bgcolor: 'rgba(var(--mui-palette-background-paperChannel) / 0.7)',
+      backdropFilter: 'blur(20px) saturate(180%)',
+      width: { xs: '100%', md: 360 },
+      position: 'relative',
+      overflow: 'visible',
+      transition: 'all 0.3s ease',
+      '&:hover': { borderColor: 'primary.main', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }
+    }}>
+      {/* Header: Avatar + Name + Status */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+        <Box sx={{ position: 'relative', width: AVATAR_SIZE, height: AVATAR_SIZE }}>
+          {/* Avatar decoration */}
+          {decorationUrl && (
+            <Box
+              component="img"
+              src={decorationUrl}
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: DECO_SIZE,
+                height: DECO_SIZE,
+                transform: 'translate(-50%, -50%)',
+                zIndex: 2,
+                pointerEvents: 'none'
+              }}
+            />
+          )}
+          <Avatar
+            src={`https://cdn.discordapp.com/avatars/${DISCORD_ID}/${user.avatar}.png?size=128`}
+            sx={{ width: AVATAR_SIZE, height: AVATAR_SIZE, border: 2, borderColor: 'divider' }}
+          />
+          <Box sx={{
+            position: 'absolute', bottom: 2, right: 2, width: 18, height: 18,
+            borderRadius: '50%', bgcolor: statusColors[data.discord_status] || statusColors.offline,
+            border: '3px solid', borderColor: 'background.paper',
+            boxShadow: '0 0 10px ' + (statusColors[data.discord_status] || statusColors.offline),
+            zIndex: 3
+          }} />
+        </Box>
+
+        <Box sx={{ minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 900, lineHeight: 1, mb: 0.6 }}>
+                {user.global_name || user.username}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                <Chip
+                  label={`@${user.username}`}
+                  size="small"
+                  sx={{ height: 16, fontSize: '0.6rem', fontWeight: 'bold', borderRadius: '4px', bgcolor: 'action.hover' }}
+                />
+                <Box sx={{ display: 'flex', gap: 0.3, opacity: 0.5 }}>
+                  {data.active_on_discord_desktop && <ComputerIcon sx={{ fontSize: 12 }} />}
+                  {data.active_on_discord_mobile && <SmartphoneIcon sx={{ fontSize: 12 }} />}
+                  {data.active_on_discord_web && <WebIcon sx={{ fontSize: 12 }} />}
+                  {data.active_on_discord_vr && <VrIcon sx={{ width: 14, height: 14 }} />}
+                </Box>
+              </Box>
+            </Box>
+            <LocalTime />
+          </Box>
+          {/* Custom Status - Integrated below name */}
+          {data.activities?.find((a: any) => a.type === 4) && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 500, fontStyle: 'italic', opacity: 0.9 }}>
+              {data.activities.find((a: any) => a.type === 4).emoji && <span>{data.activities.find((a: any) => a.type === 4).emoji.name}</span>}
+              {data.activities.find((a: any) => a.type === 4).state}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      {/* Body: All Activities */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+        {data.activities && data.activities.length > 0 ? (
+          data.activities.map((activity: any, idx: number) => {
+            // Skip custom status (already shown)
+            if (activity.type === 4) return null;
+
+            let imageUrl = null;
+            if (activity.assets?.large_image) {
+              if (activity.assets.large_image.startsWith('mp:external')) {
+                imageUrl = 'https://' + activity.assets.large_image.split('https/')[1];
+              } else {
+                imageUrl = `https://cdn.discordapp.com/app-assets/${activity.application_id}/${activity.assets.large_image}.png`;
+              }
+            }
+
+            return (
+              <Box key={idx} sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <Box sx={{ width: 44, height: 44, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, border: 1, borderColor: 'divider' }}>
+                  <ActivityIcon src={imageUrl} type={activity.type} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, display: 'block', color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.6rem' }}>
+                    {activity.type === 2 ? 'Listening to' : activity.type === 0 ? 'Playing' : 'Activity'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>
+                    {activity.name}
+                  </Typography>
+                  {(activity.details || activity.state) && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {activity.details || activity.state}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            );
+          })
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', textAlign: 'center', py: 1 }}>
+            Currently chilling...
+          </Typography>
+        )}
+      </Box>
+
+      {/* Footer: Action Button */}
+      <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Button
+          fullWidth
+          variant="contained"
+          startIcon={<EmailIcon />}
+          href={`https://discord.com/users/${DISCORD_ID}`}
+          target="_blank"
+          sx={{ borderRadius: '12px', fontWeight: 'bold', textTransform: 'none' }}
+        >
+          Send Discord Message
+        </Button>
+      </Box>
+    </Card>
+  );
+}
+
+// ── Page Component ─────────────────────────────────────────────────────
 export default function Personal() {
   return (
-    <motion.main
-      className="space-y-24"
-      variants={VARIANTS_CONTAINER}
-      initial="hidden"
-      animate="visible"
-    >
-      <motion.section
-        variants={VARIANTS_SECTION}
-        transition={TRANSITION_SECTION}
-      >
-        <div className="flex-1">
-          <p className="text-zinc-600 dark:text-zinc-400">
-            Focused on creating intuitive and performant web experiences.
-            Bridging the gap between design and development.
-          </p>
-        </div>
-      </motion.section>
+    <Box sx={{ color: 'text.primary', minHeight: '100vh', position: 'relative' }}>
+      <AnimatedBackground />
+      <TopAppBar />
 
-      <motion.section
-        variants={VARIANTS_SECTION}
-        transition={TRANSITION_SECTION}
-      >
-        <h3 className="mb-5 text-lg font-medium">Selected Projects</h3>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          {PROJECTS.map((project) => (
-            <div key={project.name} className="space-y-2">
-              <div className="relative rounded-2xl bg-zinc-50/40 p-1 ring-1 ring-zinc-200/50 ring-inset dark:bg-zinc-950/40 dark:ring-zinc-800/50">
-                <ProjectVideo src={project.video} />
-              </div>
-              <div className="px-1">
-                <a
-                  className="font-base group relative inline-block font-[450] text-zinc-900 dark:text-zinc-50"
-                  href={project.link}
+      <Container maxWidth="md" sx={{ mt: { xs: 6, md: 10 } }}>
+
+        {/* HERO SECTION */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <Box sx={{
+            mb: 12,
+            position: 'relative',
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'flex-start', md: 'center' },
+            gap: { xs: 6, md: 10 }
+          }}>
+            {/* Simple static glow fallback behind hero */}
+            <Box sx={{
+              position: 'absolute', top: -50, left: -50, width: 300, height: 300,
+              borderRadius: '50%', opacity: 0.05, filter: 'blur(80px)', pointerEvents: 'none',
+              background: 'radial-gradient(circle, var(--mui-palette-primary-main) 0%, transparent 70%)',
+            }} />
+
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h2" component="h1" sx={{ fontWeight: 900, mb: 2, letterSpacing: '-0.02em', fontSize: { xs: '2.5rem', md: '4rem' }, position: 'relative' }}>
+                Discord Designer <br />
+                <Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.
+              </Typography>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 4, fontWeight: 400, maxWidth: 600, lineHeight: 1.6 }}>
+                Proven expertise in designing and scaling high-performance server infrastructure. Advanced permissions and custom bot development.
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Chip
+                  icon={<ArrowOutwardIcon />}
+                  label="GitHub"
+                  component="a"
+                  href={SOCIAL_LINKS.github}
                   target="_blank"
-                >
-                  {project.name}
-                  <span className="absolute bottom-0.5 left-0 block h-[1px] w-full max-w-0 bg-zinc-900 dark:bg-zinc-50 transition-all duration-200 group-hover:max-w-full"></span>
-                </a>
-                <p className="text-base text-zinc-600 dark:text-zinc-400">
-                  {project.description}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.section>
+                  clickable
+                  variant="outlined"
+                  sx={{ borderRadius: '8px', fontWeight: 'bold' }}
+                />
+              </Box>
+            </Box>
 
-      <motion.section
-        variants={VARIANTS_SECTION}
-        transition={TRANSITION_SECTION}
-      >
-        <h3 className="mb-5 text-lg font-medium">Work Experience</h3>
-        <div className="flex flex-col space-y-2">
-          {WORK_EXPERIENCE.map((job) => (
-            <a
-              className="relative overflow-hidden rounded-2xl bg-zinc-300/30 p-[1px] dark:bg-zinc-600/30"
-              href={job.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              key={job.id}
-            >
-              <Spotlight
-                className="from-zinc-900 via-zinc-800 to-zinc-700 blur-2xl dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-50"
-                size={64}
-              />
-              <div className="relative h-full w-full rounded-[15px] bg-white p-4 dark:bg-zinc-950">
-                <div className="relative flex w-full flex-row justify-between">
-                  <div>
-                    <h4 className="font-normal dark:text-zinc-100">
-                      {job.title}
-                    </h4>
-                    <p className="text-zinc-500 dark:text-zinc-400">
-                      {job.company}
-                    </p>
-                  </div>
-                  <p className="text-zinc-600 dark:text-zinc-400">
-                    {job.start} - {job.end}
-                  </p>
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      </motion.section>
+            <Box sx={{ flexShrink: 0, width: { xs: '100%', md: 'auto' } }}>
+              <DiscordProfile />
+            </Box>
+          </Box>
+        </motion.div>
 
-      <motion.section
-        variants={VARIANTS_SECTION}
-        transition={TRANSITION_SECTION}
-      >
-        <h3 className="mb-3 text-lg font-medium">Blog</h3>
-        <div className="flex flex-col space-y-0">
-          <AnimatedBackground
-            enableHover
-            className="h-full w-full rounded-lg bg-zinc-100 dark:bg-zinc-900/80"
-            transition={{
-              type: 'spring',
-              bounce: 0,
-              duration: 0.2,
-            }}
-          >
-            {BLOG_POSTS.map((post) => (
-              <Link
-                key={post.uid}
-                className="-mx-3 rounded-xl px-3 py-3"
-                href={post.link}
-                data-id={post.uid}
-              >
-                <div className="flex flex-col space-y-1">
-                  <h4 className="font-normal dark:text-zinc-100">
-                    {post.title}
-                  </h4>
-                  <p className="text-zinc-500 dark:text-zinc-400">
-                    {post.description}
-                  </p>
-                </div>
-              </Link>
+
+        {/* PROJECTS SECTION */}
+        <ScrollReveal>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>Selected Projects</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 4, mb: 12 }}>
+            {PROJECTS.map((project, idx) => (
+              <ScrollReveal key={project.id} delay={idx * 0.1}>
+                <Card elevation={2} sx={{
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                  '&:hover': { transform: 'translateY(-6px)', boxShadow: 10 },
+                  '&:hover img': { transform: 'scale(1.05)' },
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                  height: '100%',
+                  transform: 'translateZ(0)', // Force GPU acceleration to avoid rendering artifacts
+                  backfaceVisibility: 'hidden',
+                }}>
+                  <CardActionArea href={project.link} target="_blank" sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+                    <Box sx={{ position: 'relative', p: 1.5, pb: 0 }}>
+                      <Box sx={{ borderRadius: '16px', overflow: 'hidden', aspectRatio: '4/3' }}>
+                        {project.images && project.images.length > 0 ? (
+                          <ProjectImage src={project.images[0]} alt={project.name} />
+                        ) : (
+                          <Box sx={{
+                            width: '100%', height: '100%',
+                            background: 'linear-gradient(135deg, var(--mui-palette-primary-main) 0%, var(--mui-palette-primary-dark, #4a3880) 100%)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 1,
+                          }}>
+                            <MusicNoteIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.3)' }} />
+                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>
+                              {project.name}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                    <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', pt: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>{project.name}</Typography>
+                        {project.verified && <VerifiedIcon color="primary" sx={{ fontSize: 20 }} />}
+                        <ArrowOutwardIcon sx={{ ml: 'auto', opacity: 0.4, fontSize: 18 }} />
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                        {project.description}
+                      </Typography>
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              </ScrollReveal>
             ))}
-          </AnimatedBackground>
-        </div>
-      </motion.section>
+          </Box>
+        </ScrollReveal>
 
-      <motion.section
-        variants={VARIANTS_SECTION}
-        transition={TRANSITION_SECTION}
-      >
-        <h3 className="mb-5 text-lg font-medium">Connect</h3>
-        <p className="mb-5 text-zinc-600 dark:text-zinc-400">
-          Feel free to contact me at{' '}
-          <a className="underline dark:text-zinc-300" href={`mailto:${EMAIL}`}>
-            {EMAIL}
-          </a>
-        </p>
-        <div className="flex items-center justify-start space-x-3">
-          {SOCIAL_LINKS.map((link) => (
-            <MagneticSocialLink key={link.label} link={link.link}>
-              {link.label}
-            </MagneticSocialLink>
-          ))}
-        </div>
-      </motion.section>
-    </motion.main>
-  )
+        {/* WORK EXPERIENCE — Timeline */}
+        <ScrollReveal>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>Work Experience</Typography>
+          <Box sx={{ position: 'relative', pl: { xs: 4, sm: 5 }, mb: 12 }}>
+            {/* Timeline line */}
+            <Box sx={{
+              position: 'absolute', left: { xs: 15, sm: 19 }, top: 0, bottom: 0, width: 2,
+              bgcolor: 'divider',
+            }} />
+
+            {WORK_EXPERIENCE.map((job, idx) => (
+              <ScrollReveal key={job.id} delay={idx * 0.08}>
+                <Box sx={{ position: 'relative', mb: 3 }}>
+                  {/* Timeline dot */}
+                  <Box sx={{
+                    position: 'absolute', left: { xs: -25, sm: -29 }, top: 20, width: 12, height: 12,
+                    borderRadius: '50%', bgcolor: job.end === 'Present' ? 'primary.main' : 'divider',
+                    border: '2px solid', borderColor: 'background.default',
+                    zIndex: 1,
+                  }} />
+
+                  <Card elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: '20px', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
+                    <CardActionArea href={job.link} target="_blank" sx={{ p: 2.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', width: 48, height: 48, fontSize: '1.1rem' }}>
+                          {job.company.charAt(0)}
+                        </Avatar>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{job.title}</Typography>
+                            {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
+                          </Box>
+                          <Typography variant="body2" color="text.secondary">{job.company}</Typography>
+                        </Box>
+                        <Chip label={`${job.start} — ${job.end}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem' }} />
+                      </Box>
+                    </CardActionArea>
+                  </Card>
+                </Box>
+              </ScrollReveal>
+            ))}
+          </Box>
+        </ScrollReveal>
+
+        {/* BLOG SECTION */}
+        <ScrollReveal>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>Blog</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 4, mb: 10 }}>
+            {BLOG_POSTS.map((post, idx) => (
+              <ScrollReveal key={post.uid} delay={idx * 0.1}>
+                <Card elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: '20px', transition: 'transform 0.2s, border-color 0.2s', '&:hover': { transform: 'translateY(-4px)', borderColor: 'primary.main' }, height: '100%' }}>
+                  <CardActionArea href={post.link} sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>{post.title}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>{post.description}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', color: 'primary.main', fontWeight: 'bold' }}>
+                      Read article <ArrowOutwardIcon fontSize="small" sx={{ ml: 1 }} />
+                    </Box>
+                  </CardActionArea>
+                </Card>
+              </ScrollReveal>
+            ))}
+          </Box>
+        </ScrollReveal>
+
+      </Container>
+
+      {/* FOOTER */}
+      <Box sx={{ bgcolor: 'background.paper', py: 8, mt: 8, borderTop: 1, borderColor: 'divider' }}>
+        <Container maxWidth="sm" sx={{ textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>Let's work together.</Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            I'm currently available for freelance work. If you have a project that you want to get started, think you need my help with something or just fancy saying hey, then get in touch.
+          </Typography>
+          <Button variant="contained" size="large" href={`mailto:${EMAIL}`} sx={{ borderRadius: 8, px: 4, py: 1.5, fontWeight: 'bold' }}>
+            Email me
+          </Button>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 6 }}>
+            &copy; {new Date().getFullYear()} Nynele.
+          </Typography>
+        </Container>
+      </Box>
+
+      {/* FIXED MINI MUSIC PLAYER REMOVED AS REQUESTED */}
+
+    </Box>
+  );
 }
