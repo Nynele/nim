@@ -82,9 +82,9 @@ const translations: Record<Language, Record<string, string>> = {
     'pitch.example.mod.btn.dismiss': 'Dismiss',
     'pitch.example.mod.btn.evidence': 'Evidence',
     // MeliasBot Example
-    'pitch.example.notif.msg': '📹 ¡New video on YouTube!\nhttps://www.youtube.com/watch?v=OMsGoTOT3W8\n@everyone',
-    'pitch.example.notif.embed.title': 'melias',
-    'pitch.example.notif.embed.desc': 'WE MET a PERVERT IN PERSON and this happens... (Part 1)',
+    'pitch.example.notif.msg': '📹 Melias just started a live stream on Twitch!\nhttps://twitch.tv/meliasoficial\n@Mention - Directos',
+    'pitch.example.notif.embed.title': 'Twitch',
+    'pitch.example.notif.embed.desc': 'meliasoficial - Twitch',
     // Normativas Example
     'pitch.example.rules.desc': '🔨 **Compliance with the rules is mandatory.**\n\nThis server is governed by the **Terms of Service** and **Community Guidelines** of Discord.\n\n`The rules are mandatory to ensure a peaceful and respectful stay. Ignorance of them does not exempt you from them.`',
     'pitch.example.rules.f1': '🔴 Behavior',
@@ -176,9 +176,9 @@ const translations: Record<Language, Record<string, string>> = {
     'pitch.example.mod.btn.dismiss': 'Descartar',
     'pitch.example.mod.btn.evidence': 'Evidencia',
     // MeliasBot Example
-    'pitch.example.notif.msg': '📹 ¡Nuevo video en YouTube!\nhttps://www.youtube.com/watch?v=OMsGoTOT3W8\n@everyone',
-    'pitch.example.notif.embed.title': 'melias',
-    'pitch.example.notif.embed.desc': 'QUEDAMOS con un PEDO EN PERSONA y pasa esto... (Parte 1)',
+    'pitch.example.notif.msg': '📹 ¡Melias acaba de hacer empezar directo en Twitch!\nhttps://twitch.tv/meliasoficial\n@Mención - Directos',
+    'pitch.example.notif.embed.title': 'Twitch',
+    'pitch.example.notif.embed.desc': 'meliasoficial - Twitch',
     // Normativas Example
     'pitch.example.rules.desc': '🔨 **El cumplimiento de la normativa es obligatorio.**\n\nEste servidor se rige con los **Terminos de Servicio** y **Directrices de la Comunidad** de Discord.\n\n\`Las normas son de cumplimiento obligatorio para asegurar una estancia pacifica y respetuosa. El desconocimiento de ellas no te exime de las mismas.\`',
     'pitch.example.rules.f1': '🔴 Comportamiento',

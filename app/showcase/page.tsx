@@ -171,7 +171,7 @@ export default function PitchPage() {
                 authorName="MeliasBot"
                 tagText="APP"
                 authorAvatar="https://cdn.discordapp.com/avatars/1355258099052580954/f50ad806b7e50b78c531ecb7e470535f.webp?size=1024"
-                timestamp="3/29/2025 4:38 PM"
+                timestamp="6/22/2025 10:29 PM"
                 content={t('pitch.example.notif.msg')}
                 embeds={[{
                   color: '#ff0000',
