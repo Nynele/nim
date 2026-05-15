@@ -23,6 +23,7 @@ interface DiscordMessageProps {
     fields?: DiscordEmbedField[];
     footer?: string;
     image?: string;
+    imageAspectRatio?: string;
     footerImage?: string;
     thumbnail?: string;
     author?: { name: string; icon?: string };
@@ -207,8 +208,17 @@ export default function DiscordMessage({
                 borderRadius: '8px',
                 overflow: 'hidden',
                 width: '100%',
+                aspectRatio: embed.imageAspectRatio,
               }}>
-                <Box component="img" src={embed.image} sx={{ width: '100%', display: 'block' }} />
+                <Box
+                  component="img"
+                  src={embed.image}
+                  sx={{
+                    width: '100%',
+                    display: 'block',
+                    ...(embed.imageAspectRatio ? { height: '100%', objectFit: 'cover' } : {}),
+                  }}
+                />
               </Box>
             )}
 
