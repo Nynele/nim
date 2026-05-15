@@ -16,6 +16,8 @@ import {
   Container,
   useColorScheme,
   Skeleton,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 
 import {
@@ -30,15 +32,24 @@ import {
   Computer as ComputerIcon,
   Smartphone as SmartphoneIcon,
   Language as WebIcon,
+  Translate as TranslateIcon,
 } from '@mui/icons-material';
 
 import {
   PROJECTS,
   WORK_EXPERIENCE,
-  BLOG_POSTS,
   EMAIL,
   SOCIAL_LINKS,
+  LocalizedString,
 } from './data';
+
+import { useLanguage } from './language-context';
+
+// ── Helpers ────────────────────────────────────────────────────────────
+const getLocalized = (val: LocalizedString, lang: 'en' | 'es') => {
+  if (typeof val === 'string') return val;
+  return val[lang];
+};
 
 // ── Scroll Animation Wrapper ───────────────────────────────────────────
 function ScrollReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -83,7 +94,102 @@ function ThemeSwitch() {
   );
 }
 
+// ── Language Switch ────────────────────────────────────────────────────
+function LanguageSwitch() {
+  const { language, setLanguage } = useLanguage();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
 
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = (lang?: 'en' | 'es') => {
+    if (lang) setLanguage(lang);
+    setAnchorEl(null);
+  };
+
+  return (
+    <>
+      <IconButton onClick={handleClick} color="inherit">
+        <TranslateIcon />
+      </IconButton>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={() => handleClose()}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        slotProps={{
+          paper: {
+            elevation: 0,
+            sx: {
+              borderRadius: '24px',
+              mt: 1.5,
+              minWidth: 180,
+              p: 1,
+              overflow: 'visible',
+              filter: 'drop-shadow(0px 8px 24px rgba(0,0,0,0.15))',
+              border: 1,
+              borderColor: 'divider',
+              bgcolor: 'rgba(var(--mui-palette-background-paperChannel) / 0.8)',
+              backdropFilter: 'blur(20px)',
+              '& .MuiList-root': {
+                p: 0,
+              },
+            }
+          }
+        }}
+      >
+        <MenuItem 
+          onClick={() => handleClose('en')} 
+          selected={language === 'en'}
+          sx={{
+            borderRadius: '16px',
+            mb: 0.5,
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'en' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          English
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleClose('es')} 
+          selected={language === 'es'}
+          sx={{
+            borderRadius: '16px',
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'es' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          Español
+        </MenuItem>
+      </Menu>
+    </>
+  );
+}
 
 // ── Music Image Fallback ──────────────────────────────────────────────
 function MusicFallback() {
@@ -186,6 +292,7 @@ function AnimatedBackground() {
 // ── Local Time Widget ──────────────────────────────────────────────────
 function LocalTime() {
   const [time, setTime] = useState('');
+  const { t } = useLanguage();
 
   useEffect(() => {
     const update = () => {
@@ -205,7 +312,7 @@ function LocalTime() {
   return (
     <Box sx={{ opacity: 0.6 }}>
       <Typography variant="caption" sx={{ fontWeight: 800, color: 'primary.main', fontSize: '0.6rem', letterSpacing: 1, display: 'block' }}>
-        LOCAL TIME
+        {t('time.local')}
       </Typography>
       <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: 'monospace', fontSize: '0.75rem' }}>
         {time} CET
@@ -222,7 +329,10 @@ function TopAppBar() {
         <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
           Nynele
         </Typography>
-        <ThemeSwitch />
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <LanguageSwitch />
+          <ThemeSwitch />
+        </Box>
       </Toolbar>
     </AppBar>
   );
@@ -260,6 +370,7 @@ function ProjectImage({ src, alt }: { src: string; alt: string }) {
 // ── Discord Profile Widget ─────────────────────────────────────────────
 function DiscordProfile() {
   const [data, setData] = useState<any>(null);
+  const { t } = useLanguage();
   const DISCORD_ID = '799251427839049818';
 
   const fetchData = useCallback(async () => {
@@ -417,7 +528,7 @@ function DiscordProfile() {
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
                   <Typography variant="caption" sx={{ fontWeight: 800, display: 'block', color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.6rem' }}>
-                    {activity.type === 2 ? 'Listening to' : activity.type === 0 ? 'Playing' : 'Activity'}
+                    {activity.type === 2 ? t('discord.listening') : activity.type === 0 ? t('discord.playing') : t('discord.activity')}
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>
                     {activity.name}
@@ -433,7 +544,7 @@ function DiscordProfile() {
           })
         ) : (
           <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', textAlign: 'center', py: 1 }}>
-            Currently chilling...
+            {t('discord.chilling')}
           </Typography>
         )}
       </Box>
@@ -448,7 +559,7 @@ function DiscordProfile() {
           target="_blank"
           sx={{ borderRadius: '12px', fontWeight: 'bold', textTransform: 'none' }}
         >
-          Send Discord Message
+          {t('discord.message')}
         </Button>
       </Box>
     </Card>
@@ -457,6 +568,8 @@ function DiscordProfile() {
 
 // ── Page Component ─────────────────────────────────────────────────────
 export default function Personal() {
+  const { language, t } = useLanguage();
+
   return (
     <Box sx={{ color: 'text.primary', minHeight: '100vh', position: 'relative' }}>
       <AnimatedBackground />
@@ -483,11 +596,14 @@ export default function Personal() {
 
             <Box sx={{ flex: 1 }}>
               <Typography variant="h2" component="h1" sx={{ fontWeight: 900, mb: 2, letterSpacing: '-0.02em', fontSize: { xs: '2.5rem', md: '4rem' }, position: 'relative' }}>
-                Discord Designer <br />
-                <Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.
+                {language === 'en' ? (
+                  <>Discord Designer <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                ) : (
+                  <>Diseñador de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                )}
               </Typography>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 4, fontWeight: 400, maxWidth: 600, lineHeight: 1.6 }}>
-                Proven expertise in designing and scaling high-performance server infrastructure. Advanced permissions and custom bot development.
+                {t('hero.subtitle')}
               </Typography>
 
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -513,7 +629,7 @@ export default function Personal() {
 
         {/* PROJECTS SECTION */}
         <ScrollReveal>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>Selected Projects</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>{t('section.projects')}</Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 4, mb: 12 }}>
             {PROJECTS.map((project, idx) => (
               <ScrollReveal key={project.id} delay={idx * 0.1}>
@@ -553,7 +669,7 @@ export default function Personal() {
                         <ArrowOutwardIcon sx={{ ml: 'auto', opacity: 0.4, fontSize: 18 }} />
                       </Box>
                       <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                        {project.description}
+                        {getLocalized(project.description, language)}
                       </Typography>
                     </CardContent>
                   </CardActionArea>
@@ -565,7 +681,7 @@ export default function Personal() {
 
         {/* WORK EXPERIENCE — Timeline */}
         <ScrollReveal>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>Work Experience</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>{t('section.experience')}</Typography>
           <Box sx={{ position: 'relative', pl: { xs: 4, sm: 5 }, mb: 12 }}>
             {/* Timeline line */}
             <Box sx={{
@@ -579,7 +695,7 @@ export default function Personal() {
                   {/* Timeline dot */}
                   <Box sx={{
                     position: 'absolute', left: { xs: -25, sm: -29 }, top: 20, width: 12, height: 12,
-                    borderRadius: '50%', bgcolor: job.end === 'Present' ? 'primary.main' : 'divider',
+                    borderRadius: '50%', bgcolor: getLocalized(job.end, language) === t('job.present') ? 'primary.main' : 'divider',
                     border: '2px solid', borderColor: 'background.default',
                     zIndex: 1,
                   }} />
@@ -592,36 +708,16 @@ export default function Personal() {
                         </Avatar>
                         <Box sx={{ flexGrow: 1 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{job.title}</Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{getLocalized(job.title, language)}</Typography>
                             {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
                           </Box>
                           <Typography variant="body2" color="text.secondary">{job.company}</Typography>
                         </Box>
-                        <Chip label={`${job.start} — ${job.end}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem' }} />
+                        <Chip label={`${job.start} — ${getLocalized(job.end, language)}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem' }} />
                       </Box>
                     </CardActionArea>
                   </Card>
                 </Box>
-              </ScrollReveal>
-            ))}
-          </Box>
-        </ScrollReveal>
-
-        {/* BLOG SECTION */}
-        <ScrollReveal>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>Blog</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 4, mb: 10 }}>
-            {BLOG_POSTS.map((post, idx) => (
-              <ScrollReveal key={post.uid} delay={idx * 0.1}>
-                <Card elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: '20px', transition: 'transform 0.2s, border-color 0.2s', '&:hover': { transform: 'translateY(-4px)', borderColor: 'primary.main' }, height: '100%' }}>
-                  <CardActionArea href={post.link} sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>{post.title}</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>{post.description}</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', color: 'primary.main', fontWeight: 'bold' }}>
-                      Read article <ArrowOutwardIcon fontSize="small" sx={{ ml: 1 }} />
-                    </Box>
-                  </CardActionArea>
-                </Card>
               </ScrollReveal>
             ))}
           </Box>
@@ -632,20 +728,25 @@ export default function Personal() {
       {/* FOOTER */}
       <Box sx={{ bgcolor: 'background.paper', py: 8, mt: 8, borderTop: 1, borderColor: 'divider' }}>
         <Container maxWidth="sm" sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>Let's work together.</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>{t('cta.title')}</Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            I'm currently available for freelance work. If you have a project that you want to get started, think you need my help with something or just fancy saying hey, then get in touch.
+            {t('cta.subtitle')}
           </Typography>
-          <Button variant="contained" size="large" href={`mailto:${EMAIL}`} sx={{ borderRadius: 8, px: 4, py: 1.5, fontWeight: 'bold' }}>
-            Email me
+          <Button 
+            variant="contained" 
+            size="large" 
+            href={SOCIAL_LINKS.discord} 
+            target="_blank"
+            startIcon={<EmailIcon />}
+            sx={{ borderRadius: 8, px: 4, py: 1.5, fontWeight: 'bold' }}
+          >
+            {t('discord.message')}
           </Button>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 6 }}>
-            &copy; {new Date().getFullYear()} Nynele.
+            &copy; {new Date().getFullYear()} {t('footer.copy')}
           </Typography>
         </Container>
       </Box>
-
-      {/* FIXED MINI MUSIC PLAYER REMOVED AS REQUESTED */}
 
     </Box>
   );
