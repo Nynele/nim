@@ -177,7 +177,7 @@ export default function PitchPage() {
                   color: '#ff0000',
                   title: t('pitch.example.notif.embed.title'),
                   description: t('pitch.example.notif.embed.desc'),
-                  image: 'https://img.youtube.com/vi/OMsGoTOT3W8/maxresdefault.jpg'
+                  image: 'https://cdn.discordapp.com/avatars/1355258099052580954/f50ad806b7e50b78c531ecb7e470535f.webp?size=1024'
                 }]}
               />
             }
