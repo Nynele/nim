@@ -39,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={roboto.variable}>
+      <body className={roboto.variable} suppressHydrationWarning>
         <InitColorSchemeScript attribute="data-mui-color-scheme" defaultMode="system" />
         <LanguageProvider>
           <MuiThemeProvider>

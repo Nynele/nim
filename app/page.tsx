@@ -44,6 +44,7 @@ import {
 } from './data';
 
 import { useLanguage } from './language-context';
+import ShaderBackground from './shader-background';
 
 // ── Helpers ────────────────────────────────────────────────────────────
 const getLocalized = (val: LocalizedString, lang: 'en' | 'es') => {
@@ -245,46 +246,6 @@ function VrIcon({ sx }: { sx?: any }) {
       sx={{ ...sx, fill: 'currentColor' }}
     >
       <path d="M4 10.5A3.5 3.5 0 0 1 7.5 7h9A3.5 3.5 0 0 1 20 10.5V14a3 3 0 0 1-3 3h-.18a3 3 0 0 1-2.95-2.46l-.2-1.04a.75.75 0 0 0-.74-.6h-1.86a.75.75 0 0 0-.74.6l-.2 1.04A3 3 0 0 1 7.18 17H7a3 3 0 0 1-3-3v-3.5Zm2 0V14a1 1 0 0 0 1 1h.18a1 1 0 0 0 .98-.82l.2-1.04a2.75 2.75 0 0 1 2.7-2.24h1.86a2.75 2.75 0 0 1 2.7 2.24l.2 1.04a1 1 0 0 0 .98.82H17a1 1 0 0 0 1-1v-3.5A1.5 1.5 0 0 0 16.5 9h-9A1.5 1.5 0 0 0 6 10.5Z" />
-    </Box>
-  );
-}
-
-// ── Animated Background ───────────────────────────────────────────────
-function AnimatedBackground() {
-  return (
-    <Box sx={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      zIndex: -1, overflow: 'hidden', pointerEvents: 'none',
-      bgcolor: 'background.default'
-    }}>
-      {/* Primary Blob */}
-      <Box sx={{
-        position: 'absolute', top: '-10%', left: '-10%', width: '60%', height: '60%',
-        borderRadius: '50%', filter: 'blur(120px)', opacity: 0.15,
-        background: 'radial-gradient(circle, var(--mui-palette-primary-main) 0%, transparent 70%)',
-        animation: 'blobFloat 20s ease-in-out infinite alternate',
-        '@keyframes blobFloat': {
-          '0%': { transform: 'translate(0, 0) scale(1)' },
-          '100%': { transform: 'translate(15%, 10%) scale(1.1)' }
-        }
-      }} />
-      {/* Secondary Blob */}
-      <Box sx={{
-        position: 'absolute', bottom: '-15%', right: '-5%', width: '50%', height: '50%',
-        borderRadius: '50%', filter: 'blur(100px)', opacity: 0.1,
-        background: 'radial-gradient(circle, var(--mui-palette-secondary-main, #9c27b0) 0%, transparent 70%)',
-        animation: 'blobFloatRev 25s ease-in-out infinite alternate',
-        '@keyframes blobFloatRev': {
-          '0%': { transform: 'translate(0, 0) scale(1.1)' },
-          '100%': { transform: 'translate(-10%, -15%) scale(1)' }
-        }
-      }} />
-      {/* Subtle Dot Grid Overlay */}
-      <Box sx={{
-        position: 'absolute', inset: 0, opacity: 0.03,
-        backgroundImage: 'radial-gradient(var(--mui-palette-text-primary) 1px, transparent 1px)',
-        backgroundSize: '32px 32px',
-      }} />
     </Box>
   );
 }
@@ -496,12 +457,28 @@ function DiscordProfile() {
             <LocalTime />
           </Box>
           {/* Custom Status - Integrated below name */}
-          {data.activities?.find((a: any) => a.type === 4) && (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 500, fontStyle: 'italic', opacity: 0.9 }}>
-              {data.activities.find((a: any) => a.type === 4).emoji && <span>{data.activities.find((a: any) => a.type === 4).emoji.name}</span>}
-              {data.activities.find((a: any) => a.type === 4).state}
-            </Typography>
-          )}
+          {(() => {
+            const customStatus = data.activities?.find((a: any) => a.type === 4);
+            if (!customStatus) return null;
+            const emoji = customStatus.emoji;
+            return (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 500, fontStyle: 'italic', opacity: 0.9 }}>
+                {emoji && (
+                  emoji.id ? (
+                    <Box
+                      component="img"
+                      src={`https://cdn.discordapp.com/emojis/${emoji.id}.${emoji.animated ? 'gif' : 'png'}`}
+                      alt={emoji.name}
+                      sx={{ width: 18, height: 18, objectFit: 'contain', display: 'inline-block', verticalAlign: 'middle', mr: 0.2 }}
+                    />
+                  ) : (
+                    <span>{emoji.name}</span>
+                  )
+                )}
+                {customStatus.state}
+              </Typography>
+            );
+          })()}
         </Box>
       </Box>
 
@@ -572,7 +549,7 @@ export default function Personal() {
 
   return (
     <Box sx={{ color: 'text.primary', minHeight: '100vh', position: 'relative' }}>
-      <AnimatedBackground />
+      <ShaderBackground />
       <TopAppBar />
 
       <Container maxWidth="md" sx={{ mt: { xs: 6, md: 10 } }}>
