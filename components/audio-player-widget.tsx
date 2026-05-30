@@ -177,7 +177,7 @@ export default function AudioPlayerWidget() {
 
       {/* Controls */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, borderLeft: 1, borderColor: 'divider', pl: 1 }}>
-        <Tooltip title={isPlaying ? 'Pause' : 'Play Lo-Fi Ambient'} arrow>
+        <Tooltip title={isPlaying ? t('audio.pause') : `${t('audio.play')} - ${currentTrack.title}`} arrow>
           <IconButton 
             onClick={handleTogglePlay} 
             size="small" 
