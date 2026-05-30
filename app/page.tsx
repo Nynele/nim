@@ -506,22 +506,31 @@ function DiscordProfile() {
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               maxWidth: '220px',
               zIndex: 4,
-              '&::after, &::before': {
+              '&::before': {
                 content: '""',
                 position: 'absolute',
                 right: '100%',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                borderStyle: 'solid'
+                width: 0,
+                height: 0,
+                borderStyle: 'solid',
+                borderWidth: '7px 7px 7px 0',
+                borderColor: 'transparent var(--mui-palette-divider) transparent transparent',
+                pointerEvents: 'none'
               },
               '&::after': {
-                borderWidth: '6px',
+                content: '""',
+                position: 'absolute',
+                right: 'calc(100% - 1px)',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 0,
+                height: 0,
+                borderStyle: 'solid',
+                borderWidth: '6px 6px 6px 0',
                 borderColor: 'transparent var(--mui-palette-background-paper) transparent transparent',
-                marginLeft: '1.5px'
-              },
-              '&::before': {
-                borderWidth: '7px',
-                borderColor: 'transparent var(--mui-palette-divider) transparent transparent'
+                pointerEvents: 'none'
               }
             }}>
               {emoji && (
