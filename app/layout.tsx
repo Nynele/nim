@@ -6,6 +6,7 @@ import { LanguageProvider } from './language-context'
 import CustomCursor from './custom-cursor'
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript'
 import { Roboto } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/react'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -47,6 +48,7 @@ export default function RootLayout({
             <div className="flex min-h-screen w-full flex-col">
               {children}
             </div>
+            <Analytics />
           </MuiThemeProvider>
         </LanguageProvider>
       </body>

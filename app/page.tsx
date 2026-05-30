@@ -285,7 +285,7 @@ function LocalTime() {
 // ── Top App Bar ────────────────────────────────────────────────────────
 function TopAppBar() {
   return (
-    <AppBar position="sticky" color="transparent" elevation={0} sx={{ backdropFilter: 'blur(12px)', borderBottom: 1, borderColor: 'divider' }}>
+    <AppBar position="sticky" color="transparent" elevation={0} sx={{ backdropFilter: 'blur(12px)', borderBottom: 1, borderColor: 'divider' }} suppressHydrationWarning>
       <Toolbar sx={{ justifyContent: 'space-between', maxWidth: 'lg', width: '100%', mx: 'auto' }}>
         <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
           Nynele
@@ -351,7 +351,7 @@ function DiscordProfile() {
 
   if (!data) {
     return (
-      <Card elevation={0} sx={{
+      <Card elevation={0} suppressHydrationWarning sx={{
         p: 2.5,
         borderRadius: '28px',
         border: 1,
@@ -388,7 +388,7 @@ function DiscordProfile() {
   const DECO_SIZE = AVATAR_SIZE * 1.2;
 
   return (
-    <Card elevation={0} sx={{
+    <Card elevation={0} suppressHydrationWarning sx={{
       p: 2.5,
       borderRadius: '28px',
       border: 1,
@@ -610,7 +610,7 @@ export default function Personal() {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 4, mb: 12 }}>
             {PROJECTS.map((project, idx) => (
               <ScrollReveal key={project.id} delay={idx * 0.1}>
-                <Card elevation={2} sx={{
+                <Card elevation={2} suppressHydrationWarning sx={{
                   transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                   '&:hover': { transform: 'translateY(-6px)', boxShadow: 10 },
                   '&:hover img': { transform: 'scale(1.05)' },
@@ -677,7 +677,7 @@ export default function Personal() {
                     zIndex: 1,
                   }} />
 
-                  <Card elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: '20px', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
+                  <Card elevation={0} suppressHydrationWarning sx={{ border: 1, borderColor: 'divider', borderRadius: '20px', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
                     <CardActionArea href={job.link} target="_blank" sx={{ p: 2.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', width: 48, height: 48, fontSize: '1.1rem' }}>
