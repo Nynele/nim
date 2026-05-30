@@ -18,6 +18,67 @@
   ::file-selector-button {
     border-color: var(--color-gray-200, currentColor);
   }
+
+  /* Disable global text selection except for editable areas */
+  html, body, * {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  input, textarea, [contenteditable="true"] {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+  }
+
+  /* Sleek custom scrollbars */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.35);
+  }
+
+  html.dark,
+  [data-mui-color-scheme="dark"] {
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  html.dark::-webkit-scrollbar-thumb,
+  [data-mui-color-scheme="dark"]::-webkit-scrollbar-thumb,
+  .dark ::-webkit-scrollbar-thumb,
+  [data-mui-color-scheme="dark"] ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  html.dark::-webkit-scrollbar-thumb:hover,
+  [data-mui-color-scheme="dark"]::-webkit-scrollbar-thumb:hover,
+  .dark ::-webkit-scrollbar-thumb:hover,
+  [data-mui-color-scheme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
 }
 
 :root {

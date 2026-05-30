@@ -47,20 +47,26 @@ import {
 import { useLanguage } from './language-context';
 import ShaderBackground from './shader-background';
 
+// In-memory cache & animation control to prevent reloading animations on language/route change
+let hasAnimated = false;
+let cachedDiscordData: any = null;
+let cachedBadges: any[] = [];
+
 // ── Helpers ────────────────────────────────────────────────────────────
-const getLocalized = (val: LocalizedString, lang: 'en' | 'es') => {
+const getLocalized = (val: LocalizedString, lang: 'en' | 'es' | 'it' | 'fr' | 'de' | 'pt') => {
   if (typeof val === 'string') return val;
   return val[lang];
 };
 
 // ── Scroll Animation Wrapper ───────────────────────────────────────────
 function ScrollReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const skip = hasAnimated;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={skip ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.5, delay, ease: [0.2, 0.65, 0.3, 0.9] }}
+      transition={skip ? { duration: 0 } : { duration: 0.5, delay, ease: [0.2, 0.65, 0.3, 0.9] }}
     >
       {children}
     </motion.div>
@@ -106,7 +112,7 @@ function LanguageSwitch() {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleClose = (lang?: 'en' | 'es') => {
+  const handleClose = (lang?: 'en' | 'es' | 'it' | 'fr' | 'de' | 'pt') => {
     if (lang) setLanguage(lang);
     setAnchorEl(null);
   };
@@ -120,6 +126,7 @@ function LanguageSwitch() {
         anchorEl={anchorEl}
         open={open}
         onClose={() => handleClose()}
+        disableScrollLock
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         slotProps={{
@@ -171,6 +178,7 @@ function LanguageSwitch() {
           selected={language === 'es'}
           sx={{
             borderRadius: '16px',
+            mb: 0.5,
             py: 1.5,
             px: 2,
             fontWeight: language === 'es' ? 'bold' : 'medium',
@@ -187,6 +195,97 @@ function LanguageSwitch() {
           }}
         >
           Español
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleClose('it')} 
+          selected={language === 'it'}
+          sx={{
+            borderRadius: '16px',
+            mb: 0.5,
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'it' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          Italiano
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleClose('fr')} 
+          selected={language === 'fr'}
+          sx={{
+            borderRadius: '16px',
+            mb: 0.5,
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'fr' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          Français
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleClose('de')} 
+          selected={language === 'de'}
+          sx={{
+            borderRadius: '16px',
+            mb: 0.5,
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'de' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          Deutsch
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleClose('pt')} 
+          selected={language === 'pt'}
+          sx={{
+            borderRadius: '16px',
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'pt' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          Português
         </MenuItem>
       </Menu>
     </>
@@ -323,7 +422,8 @@ function ProjectImage({ src, alt }: { src: string; alt: string }) {
         height: '100%',
         objectFit: 'cover',
         display: 'block',
-        bgcolor: 'action.hover'
+        bgcolor: 'action.hover',
+        transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
       }}
     />
   );
@@ -331,8 +431,8 @@ function ProjectImage({ src, alt }: { src: string; alt: string }) {
 
 // ── Discord Profile Widget ─────────────────────────────────────────────
 function DiscordProfile() {
-  const [data, setData] = useState<any>(null);
-  const [badges, setBadges] = useState<any[]>([]);
+  const [data, setData] = useState<any>(cachedDiscordData);
+  const [badges, setBadges] = useState<any[]>(cachedBadges);
   const { t } = useLanguage();
   const DISCORD_ID = '799251427839049818';
 
@@ -341,7 +441,10 @@ function DiscordProfile() {
     try {
       const res = await fetch(`https://api.lanyard.rest/v1/users/${DISCORD_ID}`);
       const json = await res.json();
-      if (json.success) setData(json.data);
+      if (json.success) {
+        setData(json.data);
+        cachedDiscordData = json.data;
+      }
     } catch (e) { console.error(e); }
 
     // Fetch badges from dstn.to and equicord.org
@@ -390,6 +493,7 @@ function DiscordProfile() {
       }
 
       setBadges(resolvedBadges);
+      cachedBadges = resolvedBadges;
     } catch (e) {
       console.error("Failed to resolve badges:", e);
     }
@@ -586,10 +690,21 @@ function DiscordProfile() {
             px: 1,
             py: 0.3,
             borderRadius: '8px',
-            bgcolor: 'rgba(0, 0, 0, 0.15)',
-            border: '1px solid rgba(255, 255, 255, 0.05)',
+            bgcolor: 'rgba(0, 0, 0, 0.05)',
+            border: '1px solid',
+            borderColor: 'rgba(0, 0, 0, 0.08)',
             alignSelf: 'flex-start',
-            boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.2)'
+            boxShadow: 'inset 0 1px 1px rgba(0, 0, 0, 0.03)',
+            '[data-mui-color-scheme="dark"] &': {
+              bgcolor: 'rgba(255, 255, 255, 0.08)',
+              borderColor: 'rgba(255, 255, 255, 0.12)',
+              boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.05)'
+            },
+            '.dark &': {
+              bgcolor: 'rgba(255, 255, 255, 0.08)',
+              borderColor: 'rgba(255, 255, 255, 0.12)',
+              boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.05)'
+            }
           }}>
             {badges.map((badge: any) => (
               <Tooltip key={badge.id} title={badge.description} arrow>
@@ -683,6 +798,10 @@ function DiscordProfile() {
 export default function Personal() {
   const { language, t } = useLanguage();
 
+  useEffect(() => {
+    hasAnimated = true;
+  }, []);
+
   return (
     <Box sx={{ color: 'text.primary', minHeight: '100vh', position: 'relative' }}>
       <ShaderBackground />
@@ -691,7 +810,11 @@ export default function Personal() {
       <Container maxWidth="md" sx={{ mt: { xs: 6, md: 10 } }}>
 
         {/* HERO SECTION */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+        <motion.div 
+          initial={hasAnimated ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={hasAnimated ? { duration: 0 } : { duration: 0.6 }}
+        >
           <Box sx={{
             mb: 12,
             position: 'relative',
@@ -709,8 +832,14 @@ export default function Personal() {
 
             <Box sx={{ flex: 1 }}>
               <Typography variant="h2" component="h1" sx={{ fontWeight: 900, mb: 2, letterSpacing: '-0.02em', fontSize: { xs: '2.5rem', md: '4rem' }, position: 'relative' }}>
-                {language === 'en' ? (
+                {language === 'en' || language === 'de' ? (
                   <>Discord Designer <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                ) : language === 'fr' ? (
+                  <>Designer Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                ) : language === 'it' ? (
+                  <>Designer di Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                ) : language === 'pt' ? (
+                  <>Designer de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
                 ) : (
                   <>Diseñador de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
                 )}
@@ -744,12 +873,12 @@ export default function Personal() {
         <ScrollReveal>
           <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>{t('section.projects')}</Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 4, mb: 12 }}>
-            {PROJECTS.map((project, idx) => (
+            {PROJECTS.map((project: any, idx: number) => (
               <ScrollReveal key={project.id} delay={idx * 0.1}>
                 <Card elevation={2} suppressHydrationWarning sx={{
-                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                  '&:hover': { transform: 'translateY(-6px)', boxShadow: 10 },
-                  '&:hover img': { transform: 'scale(1.05)' },
+                  transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                  '&:hover': { transform: 'translateY(-4px)', boxShadow: 8 },
+                  '&:hover img': { transform: 'scale(1.025)' },
                   borderRadius: '24px',
                   overflow: 'hidden',
                   height: '100%',
@@ -760,7 +889,7 @@ export default function Personal() {
                     <Box sx={{ position: 'relative', p: 1.5, pb: 0 }}>
                       <Box sx={{ borderRadius: '16px', overflow: 'hidden', aspectRatio: '4/3' }}>
                         {project.images && project.images.length > 0 ? (
-                          <ProjectImage src={project.images[0]} alt={project.name} />
+                           <ProjectImage src={project.images[0]} alt={project.name} />
                         ) : (
                           <Box sx={{
                             width: '100%', height: '100%',
@@ -792,47 +921,73 @@ export default function Personal() {
           </Box>
         </ScrollReveal>
 
-        {/* WORK EXPERIENCE — Timeline */}
+        {/* WORK EXPERIENCE */}
         <ScrollReveal>
           <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>{t('section.experience')}</Typography>
-          <Box sx={{ position: 'relative', pl: { xs: 4, sm: 5 }, mb: 12 }}>
-            {/* Timeline line */}
-            <Box sx={{
-              position: 'absolute', left: { xs: 15, sm: 19 }, top: 0, bottom: 0, width: 2,
-              bgcolor: 'divider',
-            }} />
-
-            {WORK_EXPERIENCE.map((job, idx) => (
-              <ScrollReveal key={job.id} delay={idx * 0.08}>
-                <Box sx={{ position: 'relative', mb: 3 }}>
-                  {/* Timeline dot */}
-                  <Box sx={{
-                    position: 'absolute', left: { xs: -25, sm: -29 }, top: 20, width: 12, height: 12,
-                    borderRadius: '50%', bgcolor: getLocalized(job.end, language) === t('job.present') ? 'primary.main' : 'divider',
-                    border: '2px solid', borderColor: 'background.default',
-                    zIndex: 1,
-                  }} />
-
-                  <Card elevation={0} suppressHydrationWarning sx={{ border: 1, borderColor: 'divider', borderRadius: '20px', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
-                    <CardActionArea href={job.link} target="_blank" sx={{ p: 2.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', width: 48, height: 48, fontSize: '1.1rem' }}>
-                          {job.company.charAt(0)}
-                        </Avatar>
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{getLocalized(job.title, language)}</Typography>
-                            {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4, mb: 12 }}>
+            
+            {/* Active Roles Column */}
+            <Box>
+              <Typography variant="h6" color="primary" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
+                {t('experience.active')}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                {WORK_EXPERIENCE.filter((job: any) => getLocalized(job.end, language) === t('job.present')).map((job: any, idx: number) => (
+                  <ScrollReveal key={job.id} delay={idx * 0.08}>
+                    <Card elevation={0} suppressHydrationWarning sx={{ height: 96, border: 1, borderColor: 'divider', borderRadius: '20px', overflow: 'hidden', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
+                      <CardActionArea href={job.link} target="_blank" sx={{ height: '100%' }}>
+                        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', gap: 2, px: 2.5 }}>
+                          <Avatar sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', width: 48, height: 48, fontSize: '1.1rem', fontWeight: 'bold' }}>
+                            {job.company.charAt(0)}
+                          </Avatar>
+                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{getLocalized(job.title, language)}</Typography>
+                              {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">{job.company}</Typography>
                           </Box>
-                          <Typography variant="body2" color="text.secondary">{job.company}</Typography>
+                          <Chip label={`${job.start} — ${getLocalized(job.end, language)}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem', flexShrink: 0 }} />
                         </Box>
-                        <Chip label={`${job.start} — ${getLocalized(job.end, language)}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem' }} />
-                      </Box>
-                    </CardActionArea>
-                  </Card>
-                </Box>
-              </ScrollReveal>
-            ))}
+                      </CardActionArea>
+                    </Card>
+                  </ScrollReveal>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Past Roles Column */}
+            <Box>
+              <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'divider' }} />
+                {t('experience.past')}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                {WORK_EXPERIENCE.filter((job: any) => getLocalized(job.end, language) !== t('job.present')).map((job: any, idx: number) => (
+                  <ScrollReveal key={job.id} delay={idx * 0.08}>
+                    <Card elevation={0} suppressHydrationWarning sx={{ height: 96, border: 1, borderColor: 'divider', borderRadius: '20px', overflow: 'hidden', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
+                      <CardActionArea href={job.link} target="_blank" sx={{ height: '100%' }}>
+                        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', gap: 2, px: 2.5 }}>
+                          <Avatar sx={{ bgcolor: 'action.hover', color: 'text.secondary', border: '1px solid', borderColor: 'divider', width: 48, height: 48, fontSize: '1.1rem', fontWeight: 'bold' }}>
+                            {job.company.charAt(0)}
+                          </Avatar>
+                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{getLocalized(job.title, language)}</Typography>
+                              {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">{job.company}</Typography>
+                          </Box>
+                          <Chip label={`${job.start} — ${getLocalized(job.end, language)}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem', flexShrink: 0 }} />
+                        </Box>
+                      </CardActionArea>
+                    </Card>
+                  </ScrollReveal>
+                ))}
+              </Box>
+            </Box>
+
           </Box>
         </ScrollReveal>
 

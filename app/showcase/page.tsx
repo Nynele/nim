@@ -31,6 +31,9 @@ import DiscordMessage from '../../components/discord-message';
 import BotBuilder from '../../components/bot-builder';
 import ShaderBackground from '../shader-background';
 
+// In-memory flag to prevent reloading animations on language/route change
+let hasAnimated = false;
+
 // ── Theme Switch ───────────────────────────────────────────────────────
 function ThemeSwitch() {
   const { mode, setMode } = useColorScheme();
@@ -70,7 +73,7 @@ function LanguageSwitch() {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleClose = (lang?: 'en' | 'es') => {
+  const handleClose = (lang?: 'en' | 'es' | 'it' | 'fr' | 'de' | 'pt') => {
     if (lang) setLanguage(lang);
     setAnchorEl(null);
   };
@@ -135,6 +138,7 @@ function LanguageSwitch() {
           selected={language === 'es'}
           sx={{
             borderRadius: '16px',
+            mb: 0.5,
             py: 1.5,
             px: 2,
             fontWeight: language === 'es' ? 'bold' : 'medium',
@@ -151,6 +155,97 @@ function LanguageSwitch() {
           }}
         >
           Español
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleClose('it')} 
+          selected={language === 'it'}
+          sx={{
+            borderRadius: '16px',
+            mb: 0.5,
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'it' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          Italiano
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleClose('fr')} 
+          selected={language === 'fr'}
+          sx={{
+            borderRadius: '16px',
+            mb: 0.5,
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'fr' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          Français
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleClose('de')} 
+          selected={language === 'de'}
+          sx={{
+            borderRadius: '16px',
+            mb: 0.5,
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'de' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          Deutsch
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleClose('pt')} 
+          selected={language === 'pt'}
+          sx={{
+            borderRadius: '16px',
+            py: 1.5,
+            px: 2,
+            fontWeight: language === 'pt' ? 'bold' : 'medium',
+            transition: 'all 0.2s ease',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': { bgcolor: 'primary.dark' }
+            },
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'scale(1.02)'
+            }
+          }}
+        >
+          Português
         </MenuItem>
       </Menu>
     </>
@@ -175,12 +270,13 @@ function TopAppBar() {
 
 // ── Scroll Animation Wrapper ───────────────────────────────────────────
 function ScrollReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const skip = hasAnimated;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={skip ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.5, delay, ease: [0.2, 0.65, 0.3, 0.9] }}
+      transition={skip ? { duration: 0 } : { duration: 0.5, delay, ease: [0.2, 0.65, 0.3, 0.9] }}
     >
       {children}
     </motion.div>
@@ -188,17 +284,28 @@ function ScrollReveal({ children, delay = 0 }: { children: React.ReactNode; dela
 }
 
 function FeatureShowcase({ title, description, reverse, message }: { title: string, description: string, reverse?: boolean, message: React.ReactNode }) {
+  const skip = hasAnimated;
   return (
     <Box sx={{ py: { xs: 8, md: 12 } }}>
       <Box sx={{ display: 'flex', gap: 8, alignItems: 'center', flexDirection: { xs: 'column', md: reverse ? 'row-reverse' : 'row' } }}>
         <Box sx={{ flex: 1, width: '100%' }}>
-          <motion.div initial={{ opacity: 0, x: reverse ? 30 : -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease: [0.2, 0.65, 0.3, 0.9] }}>
+          <motion.div 
+            initial={skip ? { opacity: 1, x: 0 } : { opacity: 0, x: reverse ? 30 : -30 }} 
+            whileInView={{ opacity: 1, x: 0 }} 
+            viewport={{ once: true }} 
+            transition={skip ? { duration: 0 } : { duration: 0.5, ease: [0.2, 0.65, 0.3, 0.9] }}
+          >
             <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, letterSpacing: '-0.02em', fontSize: { xs: '2rem', md: '3rem' } }}>{title}</Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', fontSize: '1.1rem', lineHeight: 1.7 }}>{description}</Typography>
           </motion.div>
         </Box>
         <Box sx={{ flex: 1, width: '100%' }}>
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, ease: [0.2, 0.65, 0.3, 0.9] }}>
+          <motion.div 
+            initial={skip ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }} 
+            whileInView={{ opacity: 1, scale: 1 }} 
+            viewport={{ once: true }} 
+            transition={skip ? { duration: 0 } : { duration: 0.5, ease: [0.2, 0.65, 0.3, 0.9] }}
+          >
             <Box 
               suppressHydrationWarning
               sx={{ 
@@ -231,6 +338,10 @@ function FeatureShowcase({ title, description, reverse, message }: { title: stri
 export default function PitchPage() {
   const { language, t } = useLanguage();
 
+  useEffect(() => {
+    hasAnimated = true;
+  }, []);
+
   return (
     <Box sx={{ minHeight: '100vh', position: 'relative', color: 'text.primary', overflow: 'hidden' }}>
       <ShaderBackground />
@@ -247,15 +358,25 @@ export default function PitchPage() {
       <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
         {/* HERO SECTION */}
         <Box sx={{ py: { xs: 10, md: 15 }, textAlign: 'center' }}>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <motion.div 
+            initial={hasAnimated ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={hasAnimated ? { duration: 0 } : { duration: 0.6 }}
+          >
             <Typography variant="h1" sx={{
               fontWeight: 900, mb: 3,
               fontSize: { xs: '3.5rem', md: '5.5rem' },
               letterSpacing: '-0.04em',
               lineHeight: 1.1,
             }}>
-              {language === 'en' ? (
+              {language === 'en' || language === 'de' ? (
                 <>Discord Designer <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+              ) : language === 'fr' ? (
+                <>Designer Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+              ) : language === 'it' ? (
+                <>Designer di Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+              ) : language === 'pt' ? (
+                <>Designer de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
               ) : (
                 <>Diseñador de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
               )}
@@ -390,7 +511,7 @@ export default function PitchPage() {
         <ScrollReveal>
           <Box sx={{ textAlign: 'center', py: 10, mb: 10, borderTop: 1, borderColor: 'divider' }}>
             <Typography variant="overline" sx={{ fontWeight: 'bold', color: 'text.secondary', letterSpacing: 2, display: 'block', mb: 4 }}>
-              TRUSTED BY
+              {t('pitch.trusted_by')}
             </Typography>
             <Box sx={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
               <Box
@@ -407,8 +528,8 @@ export default function PitchPage() {
                   }
                 }}
               >
-                {[...WORK_EXPERIENCE, ...WORK_EXPERIENCE].map((work, index) => {
-                  const projectImage = PROJECTS.find(p => p.name.includes(work.company) || work.company.includes(p.name))?.images[0];
+                {[...WORK_EXPERIENCE, ...WORK_EXPERIENCE].map((work: any, index: number) => {
+                  const projectImage = PROJECTS.find((p: any) => p.name.includes(work.company) || work.company.includes(p.name))?.images[0];
 
                   return (
                     <Box
@@ -464,10 +585,26 @@ export default function PitchPage() {
       </Container>
 
       {/* FOOTER */}
-      <Box sx={{ py: 10, textAlign: 'center', borderTop: 1, borderColor: 'divider' }}>
-        <Typography variant="body2" color="text.secondary">
-          &copy; {new Date().getFullYear()} Nynele Studio. All rights reserved.
-        </Typography>
+      <Box sx={{ bgcolor: 'background.paper', py: 8, mt: 8, borderTop: 1, borderColor: 'divider' }}>
+        <Container maxWidth="sm" sx={{ textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>{t('cta.title')}</Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            {t('cta.subtitle')}
+          </Typography>
+          <Button 
+            variant="contained" 
+            size="large" 
+            href={SOCIAL_LINKS.discord} 
+            target="_blank"
+            startIcon={<EmailIcon />}
+            sx={{ borderRadius: 8, px: 4, py: 1.5, fontWeight: 'bold' }}
+          >
+            {t('discord.message')}
+          </Button>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 6 }}>
+            &copy; {new Date().getFullYear()} {t('footer.copy')}
+          </Typography>
+        </Container>
       </Box>
     </Box>
   );

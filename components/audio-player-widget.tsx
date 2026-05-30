@@ -103,7 +103,7 @@ export default function AudioPlayerWidget() {
       }}
     >
       {/* Equalizer / Music Icon */}
-      <Tooltip title="Select Track" arrow>
+      <Tooltip title={t('audio.select_track')} arrow>
         <IconButton 
           onClick={handleOpenMenu}
           size="small"
@@ -157,7 +157,7 @@ export default function AudioPlayerWidget() {
             textOverflow: 'ellipsis'
           }}
         >
-          {currentTrack.id === 'live' ? currentTrack.artist : (isPlaying ? 'Playing Lo-Fi' : 'Lo-Fi Background')}
+          {currentTrack.id === 'live' ? currentTrack.artist : (isPlaying ? t('audio.playing_lofi') : t('audio.lofi_background'))}
         </Typography>
         <Typography 
           variant="caption" 
@@ -200,6 +200,7 @@ export default function AudioPlayerWidget() {
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
+        disableScrollLock
         transformOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
         slotProps={{
@@ -225,7 +226,7 @@ export default function AudioPlayerWidget() {
       >
         <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider', mb: 1 }}>
           <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: 1 }}>
-            Live Sync Menu
+            {t('audio.live_sync_menu')}
           </Typography>
         </Box>
         <MenuItem
@@ -247,10 +248,10 @@ export default function AudioPlayerWidget() {
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-              Force Refresh Sync
+              {t('audio.force_refresh')}
             </Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
-              Re-fetch active Discord presence
+              {t('audio.force_refresh_desc')}
             </Typography>
           </Box>
         </MenuItem>
@@ -272,10 +273,10 @@ export default function AudioPlayerWidget() {
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-              Reset Video Search
+              {t('audio.reset_search')}
             </Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
-              Reset to first search result
+              {t('audio.reset_search_desc')}
             </Typography>
           </Box>
         </MenuItem>

@@ -34,7 +34,6 @@ const FS_SOURCE = `
   precision mediump float;
   uniform vec2 u_resolution;
   uniform float u_time;
-  uniform vec2 u_mouse;
   uniform vec3 u_color_bg;
   uniform vec3 u_color_primary;
   uniform vec3 u_color_secondary;
@@ -104,15 +103,6 @@ const FS_SOURCE = `
     float edge = abs(q.x - r.y);
     col += u_color_primary * smoothstep(0.2, 0.0, edge) * (0.08 + u_audio_bass * 0.35);
 
-    // Add extra glowing light around cursor position (soft and subtle)
-    if (u_mouse.x != -1000.0) {
-      vec2 mouse_st = u_mouse / u_resolution.xy;
-      mouse_st.x *= u_resolution.x / u_resolution.y;
-      float mouse_dist = distance(st, mouse_st);
-      float glow = smoothstep(0.45, 0.0, mouse_dist);
-      col += u_color_primary * glow * (0.08 + u_audio_treble * 0.30);
-    }
-
     // Apply soft vignette to center the user focus on the main content card
     vec2 uv = gl_FragCoord.xy / u_resolution.xy;
     float vignette = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
@@ -142,8 +132,6 @@ export default function ShaderBackground() {
   const glCanvasRef = useRef<HTMLCanvasElement>(null);
   const ctxCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Mouse coordinate refs for render loops (avoiding re-renders)
-  const mouseRef = useRef({ x: -1000, y: -1000, targetX: -1000, targetY: -1000 });
   const isMobileRef = useRef(false);
 
   // Audio LERP refs to smooth spiky beat updates
@@ -206,20 +194,6 @@ export default function ShaderBackground() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
 
-    // Mouse move tracking
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current.targetX = e.clientX;
-      mouseRef.current.targetY = e.clientY;
-    };
-
-    const handleMouseLeave = () => {
-      mouseRef.current.targetX = -1000;
-      mouseRef.current.targetY = -1000;
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseleave', handleMouseLeave);
-
     // Canvas size handler
     const resizeCanvases = () => {
       const w = window.innerWidth;
@@ -256,8 +230,15 @@ export default function ShaderBackground() {
       if (vs && fs) {
         gl.shaderSource(vs, VS_SOURCE);
         gl.compileShader(vs);
+        if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+          console.error("Vertex shader compile error:", gl.getShaderInfoLog(vs));
+        }
+
         gl.shaderSource(fs, FS_SOURCE);
         gl.compileShader(fs);
+        if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+          console.error("Fragment shader compile error:", gl.getShaderInfoLog(fs));
+        }
 
         // Create WebGL program
         program = gl.createProgram();
@@ -265,6 +246,9 @@ export default function ShaderBackground() {
           gl.attachShader(program, vs);
           gl.attachShader(program, fs);
           gl.linkProgram(program);
+          if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error("Program link error:", gl.getProgramInfoLog(program));
+          }
           gl.useProgram(program);
 
           // Full-screen Quad Buffer
@@ -358,21 +342,6 @@ export default function ShaderBackground() {
       const w = window.innerWidth;
       const h = window.innerHeight;
 
-      // Smooth mouse interpolation (LERP)
-      const mouse = mouseRef.current;
-      if (mouse.targetX !== -1000) {
-        if (mouse.x === -1000) {
-          mouse.x = mouse.targetX;
-          mouse.y = mouse.targetY;
-        } else {
-          mouse.x += (mouse.targetX - mouse.x) * 0.08;
-          mouse.y += (mouse.targetY - mouse.y) * 0.08;
-        }
-      } else {
-        mouse.x = -1000;
-        mouse.y = -1000;
-      }
-
       // 1. Render WebGL Fluid Background
       if (gl && program && glCanvasRef.current) {
         const glW = glCanvasRef.current.width;
@@ -386,17 +355,6 @@ export default function ShaderBackground() {
         gl.uniform1f(gl.getUniformLocation(program, 'u_time'), accumulatedTime);
         gl.uniform1f(gl.getUniformLocation(program, 'u_audio_bass'), smoothBass);
         gl.uniform1f(gl.getUniformLocation(program, 'u_audio_treble'), smoothTreble);
-        
-        // Scale mouse position to WebGL low-res canvas coordinate system
-        const scaleX = glW / w;
-        const scaleY = glH / h;
-        // Invert Y axis for WebGL viewport coordinates
-        const glMouseY = mouse.y !== -1000 ? h - mouse.y : -1000;
-        gl.uniform2f(
-          gl.getUniformLocation(program, 'u_mouse'),
-          mouse.x !== -1000 ? mouse.x * scaleX : -1000,
-          mouse.y !== -1000 ? glMouseY * scaleY : -1000
-        );
 
         gl.uniform3f(gl.getUniformLocation(program, 'u_color_bg'), colorBg[0], colorBg[1], colorBg[2]);
         gl.uniform3f(gl.getUniformLocation(program, 'u_color_primary'), colorPrimary[0], colorPrimary[1], colorPrimary[2]);
@@ -429,30 +387,8 @@ export default function ShaderBackground() {
           if (n.y < -10) n.y = h + 10;
           if (n.y > h + 10) n.y = -10;
 
-          // Mouse gravity interaction (gentle repulsion scales with depth z)
-          if (mouse.x !== -1000) {
-            const dx = n.x - mouse.x; // Direction away from mouse
-            const dy = n.y - mouse.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            // Repel nodes if they are within mouse aura
-            if (dist < 180 && dist > 1) {
-              const force = (180 - dist) * 0.00045 * (n.z * 1.1);
-              n.x += (dx / dist) * force;
-              n.y += (dy / dist) * force;
-            }
-          }
-
-          // Node alpha modulation near mouse
-          let alpha = n.baseAlpha;
-          if (mouse.x !== -1000) {
-            const dx = mouse.x - n.x;
-            const dy = mouse.y - n.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 150) {
-              alpha = n.baseAlpha + (0.9 - n.baseAlpha) * (1.0 - dist / 150) * 0.5;
-            }
-          }
+          // Constant alpha without mouse modulation
+          const alpha = n.baseAlpha;
 
           // Pulsing glow factor boosted by mid frequencies
           const audioPulse = smoothMid * 2.2;
@@ -516,8 +452,6 @@ export default function ShaderBackground() {
     // Cleanup resources on unmount
     return () => {
       window.removeEventListener('resize', checkMobile);
-      window.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('resize', resizeCanvases);
       cancelAnimationFrame(animationFrameId);
 

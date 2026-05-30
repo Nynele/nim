@@ -1,16 +1,40 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, TextField, Avatar, Button, Stack, Chip } from '@mui/material';
 import { PhotoCamera as PhotoCameraIcon } from '@mui/icons-material';
 import { DiscordProfile } from './discord-message';
+import { useLanguage } from '../app/language-context';
 
 export default function BotBuilder() {
-  const [name, setName] = useState('My Custom Bot');
-  const [bio, setBio] = useState('I am a professional Discord bot tailored to your community needs.');
+  const { language, t } = useLanguage();
+
+  const [name, setName] = useState('');
+  const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState('https://cdn.discordapp.com/avatars/1355258099052580954/f50ad806b7e50b78c531ecb7e470535f.webp?size=1024');
   const [banner, setBanner] = useState('https://cdn.discordapp.com/banners/1355258099052580954/f10377ef69ce43fa5605d27b43588a12.webp?size=1024');
-  const [tags, setTags] = useState(['Custom', 'Security', 'Fast']);
+  const [tags, setTags] = useState<string[]>([]);
+
+  // Track if user has modified each field manually to prevent overwriting
+  const [isNameDirty, setIsNameDirty] = useState(false);
+  const [isBioDirty, setIsBioDirty] = useState(false);
+  const [isTagsDirty, setIsTagsDirty] = useState(false);
+
+  useEffect(() => {
+    if (!isNameDirty) {
+      setName(t('builder.default.name'));
+    }
+  }, [language, isNameDirty, t]);
+
+  useEffect(() => {
+    if (!isBioDirty) {
+      setBio(t('builder.default.bio'));
+    }
+  }, [language, isBioDirty, t]);
+
+  useEffect(() => {
+    if (!isTagsDirty) {
+      setTags([t('builder.default.tag1'), t('builder.default.tag2'), t('builder.default.tag3')]);
+    }
+  }, [language, isTagsDirty, t]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -37,7 +61,7 @@ export default function BotBuilder() {
       {/* Settings Form */}
       <Box sx={{ flex: 1 }}>
         <Typography sx={{ color: '#dbdee1', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', mb: 1 }}>
-          App Icon
+          {t('builder.app_icon')}
         </Typography>
         <Box sx={{ display: 'flex', gap: 3, mb: 4 }}>
           <Box sx={{ position: 'relative' }}>
@@ -65,19 +89,22 @@ export default function BotBuilder() {
             />
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <Button size="small" sx={{ color: '#00aff4', textTransform: 'none', fontWeight: 600 }}>Remove</Button>
+            <Button size="small" sx={{ color: '#00aff4', textTransform: 'none', fontWeight: 600 }}>{t('builder.remove')}</Button>
           </Box>
         </Box>
 
         <Stack spacing={3}>
           <Box>
             <Typography sx={{ color: '#dbdee1', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', mb: 1 }}>
-              Name
+              {t('builder.name')}
             </Typography>
             <TextField
               fullWidth
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setIsNameDirty(true);
+              }}
               variant="standard"
               slotProps={{
                 input: {
@@ -97,17 +124,20 @@ export default function BotBuilder() {
 
           <Box>
             <Typography sx={{ color: '#dbdee1', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', mb: 1 }}>
-              Description (Maximum 400 characters)
+              {t('builder.description_label')}
             </Typography>
             <Typography sx={{ color: '#949ba4', fontSize: '0.8125rem', mb: 1 }}>
-              Your description will appear in the About Me section of your bot's profile.
+              {t('builder.description_help')}
             </Typography>
             <TextField
               fullWidth
               multiline
               rows={4}
               value={bio}
-              onChange={(e) => setBio(e.target.value)}
+              onChange={(e) => {
+                setBio(e.target.value);
+                setIsBioDirty(true);
+              }}
               variant="standard"
               slotProps={{
                 input: {
@@ -127,27 +157,31 @@ export default function BotBuilder() {
 
           <Box>
             <Typography sx={{ color: '#dbdee1', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', mb: 1 }}>
-              Tags (Maximum 5)
+              {t('builder.tags_label')}
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
               {tags.map((tag, i) => (
                 <Chip 
                   key={i} 
                   label={tag} 
-                  onDelete={() => setTags(tags.filter((_, index) => index !== i))}
+                  onDelete={() => {
+                    setTags(tags.filter((_, index) => index !== i));
+                    setIsTagsDirty(true);
+                  }}
                   sx={{ bgcolor: '#1e1f22', color: '#fff', '& .MuiChip-deleteIcon': { color: '#dbdee1' } }} 
                 />
               ))}
             </Box>
             <TextField
               fullWidth
-              placeholder="Add up to 5 tags..."
+              placeholder={t('builder.tags_placeholder')}
               variant="standard"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && tags.length < 5) {
                   const target = e.target as HTMLInputElement;
                   if (target.value.trim()) {
                     setTags([...tags, target.value.trim()]);
+                    setIsTagsDirty(true);
                     target.value = '';
                   }
                 }
@@ -181,7 +215,7 @@ export default function BotBuilder() {
         border: '1px solid rgba(0,0,0,0.2)'
       }}>
         <Typography sx={{ color: '#dbdee1', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', mb: 3 }}>
-          Live Profile Preview
+          {t('builder.preview_title')}
         </Typography>
         <DiscordProfile
           name={name}
@@ -189,10 +223,10 @@ export default function BotBuilder() {
           avatar={avatar}
           banner={banner}
           bio={bio}
-          customStatus="🛡️ Custom Bot System"
+          customStatus={t('builder.custom_status')}
         />
         <Typography sx={{ mt: 3, color: '#949ba4', fontSize: '0.8125rem', fontStyle: 'italic' }}>
-          This is how your custom brand will look in Discord.
+          {t('builder.preview_help')}
         </Typography>
       </Box>
     </Box>

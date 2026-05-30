@@ -2,51 +2,59 @@
 
 import Link from 'next/link';
 import { Box, Typography, Button, Container } from '@mui/material';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Home as HomeIcon } from '@mui/icons-material';
-import { useLanguage } from './language-context';
+import { useState, useEffect } from 'react';
+import ShaderBackground from './shader-background';
+const translations = {
+  en: {
+    title: 'Page not found',
+    subtitle: "The page you are looking for doesn't exist or has been moved. Don't worry, even the best designers get lost sometimes.",
+    button: 'Back to Home'
+  },
+  es: {
+    title: 'Página no encontrada',
+    subtitle: 'La página que buscas no existe o ha sido movida. No te preocupes, hasta los mejores diseñadores se pierden a veces.',
+    button: 'Volver al Inicio'
+  },
+  it: {
+    title: 'Pagina non trovata',
+    subtitle: 'La pagina che stai cercando non esiste o è stata spostata. Non preoccuparti, anche i migliori designer si perdono a volte.',
+    button: 'Torna alla Home'
+  },
+  fr: {
+    title: 'Page non trouvée',
+    subtitle: "La page que vous recherchez n'existe pas ou a été déplacée. Ne vous inquiétez pas, même les meilleurs designers se perdent parfois.",
+    button: "Retour à l'accueil"
+  },
+  de: {
+    title: 'Seite nicht gefunden',
+    subtitle: 'Die gesuchte Seite existiert nicht oder wurde verschoben. Keine Sorge, selbst die besten Designer verlieren mal den Weg.',
+    button: 'Zurück zur Startseite'
+  },
+  pt: {
+    title: 'Página não encontrada',
+    subtitle: 'A página que procura não existe ou foi movida. Não se preocupe, até os melhores designers se perdem às vezes.',
+    button: 'Voltar ao Início'
+  }
+};
 
-function AnimatedBackground() {
-  return (
-    <Box sx={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      zIndex: -1, overflow: 'hidden', pointerEvents: 'none',
-      bgcolor: 'background.default'
-    }}>
-      {/* Primary Blob */}
-      <Box sx={{
-        position: 'absolute', top: '-10%', left: '-10%', width: '60%', height: '60%',
-        borderRadius: '50%', filter: 'blur(120px)', opacity: 0.15,
-        background: 'radial-gradient(circle, var(--mui-palette-primary-main) 0%, transparent 70%)',
-        animation: 'blobFloat 20s ease-in-out infinite alternate',
-        '@keyframes blobFloat': {
-          '0%': { transform: 'translate(0, 0) scale(1)' },
-          '100%': { transform: 'translate(15%, 10%) scale(1.1)' }
-        }
-      }} />
-      {/* Secondary Blob */}
-      <Box sx={{
-        position: 'absolute', bottom: '-15%', right: '-5%', width: '50%', height: '50%',
-        borderRadius: '50%', filter: 'blur(100px)', opacity: 0.1,
-        background: 'radial-gradient(circle, var(--mui-palette-secondary-main, #9c27b0) 0%, transparent 70%)',
-        animation: 'blobFloatRev 25s ease-in-out infinite alternate',
-        '@keyframes blobFloatRev': {
-          '0%': { transform: 'translate(0, 0) scale(1.1)' },
-          '100%': { transform: 'translate(-10%, -15%) scale(1)' }
-        }
-      }} />
-      {/* Subtle Dot Grid Overlay */}
-      <Box sx={{
-        position: 'absolute', inset: 0, opacity: 0.03,
-        backgroundImage: 'radial-gradient(var(--mui-palette-text-primary) 1px, transparent 1px)',
-        backgroundSize: '32px 32px',
-      }} />
-    </Box>
-  );
-}
+const languages: ('en' | 'es' | 'it' | 'fr' | 'de' | 'pt')[] = ['en', 'es', 'it', 'fr', 'de', 'pt'];
 
 export default function NotFound() {
-  const { t } = useLanguage();
+  const [localLang, setLocalLang] = useState<'en' | 'es' | 'it' | 'fr' | 'de' | 'pt'>('en');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLocalLang((prev) => {
+        const nextIndex = (languages.indexOf(prev) + 1) % languages.length;
+        return languages[nextIndex];
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const t = translations[localLang];
 
   return (
     <Box sx={{ 
@@ -59,7 +67,7 @@ export default function NotFound() {
       textAlign: 'center',
       px: 2
     }}>
-      <AnimatedBackground />
+      <ShaderBackground />
       
       <Container maxWidth="sm">
         <motion.div
@@ -84,34 +92,48 @@ export default function NotFound() {
             404
           </Typography>
           
-          <Typography 
-            variant="h4" 
-            sx={{ 
-              fontWeight: 800, 
-              mb: 2,
-              letterSpacing: '-0.02em'
-            }}
-          >
-            {t('404.title')}
-          </Typography>
-          
-          <Typography 
-            variant="body1" 
-            color="text.secondary" 
-            sx={{ 
-              mb: 6, 
-              maxWidth: 400, 
-              mx: 'auto',
-              lineHeight: 1.6,
-              fontSize: '1.1rem'
-            }}
-          >
-            {t('404.subtitle')}
-          </Typography>
-          
+          {/* Only the title and subtitle transition / fade out */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={localLang}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontWeight: 800, 
+                  mb: 2,
+                  letterSpacing: '-0.02em'
+                }}
+              >
+                {t.title}
+              </Typography>
+              
+              <Typography 
+                variant="body1" 
+                color="text.secondary" 
+                sx={{ 
+                  mb: 6, 
+                  maxWidth: 400, 
+                  mx: 'auto',
+                  lineHeight: 1.6,
+                  fontSize: '1.1rem',
+                  minHeight: '80px' // Keep height consistent to prevent layout shift
+                }}
+              >
+                {t.subtitle}
+              </Typography>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Button container stays completely fixed in place */}
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            style={{ display: 'inline-block' }}
           >
             <Button
               component={Link}
@@ -127,12 +149,25 @@ export default function NotFound() {
                 textTransform: 'none',
                 fontSize: '1rem',
                 boxShadow: '0 8px 32px rgba(var(--mui-palette-primary-mainChannel) / 0.2)',
+                transition: 'all 0.2s ease-in-out',
                 '&:hover': {
-                  boxShadow: '0 12px 40px rgba(var(--mui-palette-primary-mainChannel) / 0.3)',
+                  bgcolor: 'primary.dark',
+                  boxShadow: '0 12px 40px rgba(var(--mui-palette-primary-mainChannel) / 0.4)',
                 }
               }}
             >
-              {t('404.button')}
+              {/* Only the inner text of the button changes smoothly with a quick crossfade */}
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={localLang}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {t.button}
+                </motion.span>
+              </AnimatePresence>
             </Button>
           </motion.div>
         </motion.div>

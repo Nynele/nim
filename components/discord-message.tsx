@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Box, Typography, Avatar } from '@mui/material';
+import { useLanguage } from '../app/language-context';
 
 interface DiscordEmbedField {
   name: string;
@@ -307,6 +308,7 @@ interface DiscordProfileProps {
 }
 
 export function DiscordProfile({ name, username, avatar, banner, bio, customStatus, badges }: DiscordProfileProps) {
+  const { t } = useLanguage();
   return (
     <Box sx={{
       width: 340,
@@ -375,7 +377,7 @@ export function DiscordProfile({ name, username, avatar, banner, bio, customStat
           <Box sx={{ height: '1px', bgcolor: '#35363c', my: 1.5 }} />
 
           <Typography sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', color: '#f2f3f5', mb: 0.5 }}>
-            About Me
+            {t('discord.about_me')}
           </Typography>
           <Typography sx={{ fontSize: '0.875rem', color: '#dbdee1', whiteSpace: 'pre-wrap' }}>
             {bio}
