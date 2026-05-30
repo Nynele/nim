@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTheme, useColorScheme } from '@mui/material';
 import { Box } from '@mui/material';
+import { AudioManager } from '../lib/audio-manager';
 
 // --- Helpers ---
 function hexToRgb(hex: string): [number, number, number] {
@@ -37,6 +38,8 @@ const FS_SOURCE = `
   uniform vec3 u_color_bg;
   uniform vec3 u_color_primary;
   uniform vec3 u_color_secondary;
+  uniform float u_audio_bass;
+  uniform float u_audio_treble;
 
   // GLSL procedural noise functions
   float hash(vec2 p) {
@@ -99,7 +102,7 @@ const FS_SOURCE = `
 
     // Dynamic glowing edge threads (like glowing network fibres)
     float edge = abs(q.x - r.y);
-    col += u_color_primary * smoothstep(0.2, 0.0, edge) * 0.12;
+    col += u_color_primary * smoothstep(0.2, 0.0, edge) * (0.08 + u_audio_bass * 0.35);
 
     // Add extra glowing light around cursor position (soft and subtle)
     if (u_mouse.x != -1000.0) {
@@ -107,7 +110,7 @@ const FS_SOURCE = `
       mouse_st.x *= u_resolution.x / u_resolution.y;
       float mouse_dist = distance(st, mouse_st);
       float glow = smoothstep(0.45, 0.0, mouse_dist);
-      col += u_color_primary * glow * 0.14;
+      col += u_color_primary * glow * (0.08 + u_audio_treble * 0.30);
     }
 
     // Apply soft vignette to center the user focus on the main content card
@@ -142,6 +145,12 @@ export default function ShaderBackground() {
   // Mouse coordinate refs for render loops (avoiding re-renders)
   const mouseRef = useRef({ x: -1000, y: -1000, targetX: -1000, targetY: -1000 });
   const isMobileRef = useRef(false);
+
+  // Audio LERP refs to smooth spiky beat updates
+  const smoothedBassRef = useRef(0.12);
+  const smoothedMidRef = useRef(0.18);
+  const smoothedTrebleRef = useRef(0.22);
+  const smoothedIntensityRef = useRef(0.18);
 
   // Set mounted on client mount
   useEffect(() => {
@@ -189,8 +198,6 @@ export default function ShaderBackground() {
 
     // Convert hex color values to normalized RGB for GLSL
     const colorBg = hexToRgb(currentColors.bg);
-    const colorPrimary = hexToRgb(currentColors.primary);
-    const colorSecondary = hexToRgb(currentColors.secondary);
 
     // Determine if user device is mobile
     const checkMobile = () => {
@@ -303,12 +310,50 @@ export default function ShaderBackground() {
     generateNodes();
 
     let animationFrameId: number;
-    let startTime = Date.now();
+    let accumulatedTime = 0;
+    let lastTime = Date.now();
 
     // Render loop
     const render = () => {
       const now = Date.now();
-      const timeSecs = (now - startTime) * 0.001;
+      const delta = (now - lastTime) * 0.001;
+      lastTime = now;
+
+      const manager = AudioManager.getInstance();
+      const isPlaying = manager.isPlaying;
+
+      // Fetch real-time frequency analysis data
+      const audioData = manager.getAudioData();
+
+      // Exponential smoothing (LERP) to prevent spiky beat visual jitters
+      const easeFactor = 0.12;
+      smoothedBassRef.current += (audioData.bass - smoothedBassRef.current) * easeFactor;
+      smoothedMidRef.current += (audioData.mid - smoothedMidRef.current) * easeFactor;
+      smoothedTrebleRef.current += (audioData.treble - smoothedTrebleRef.current) * easeFactor;
+      smoothedIntensityRef.current += (audioData.intensity - smoothedIntensityRef.current) * easeFactor;
+
+      const smoothBass = smoothedBassRef.current;
+      const smoothMid = smoothedMidRef.current;
+      const smoothTreble = smoothedTrebleRef.current;
+      const smoothIntensity = smoothedIntensityRef.current;
+
+      // Fluid speeds up with sound volume (intensity), and drifts slowly when paused
+      const speedMultiplier = isPlaying ? (0.6 + smoothIntensity * 2.2) : 0.25;
+      accumulatedTime += delta * speedMultiplier;
+
+      // Read active theme primary/secondary colors from CSS variables dynamically
+      let activePrimary = currentColors.primary;
+      let activeSecondary = currentColors.secondary;
+      if (typeof window !== 'undefined') {
+        const rootStyle = getComputedStyle(document.documentElement);
+        const pVal = rootStyle.getPropertyValue('--mui-palette-primary-main').trim();
+        const sVal = rootStyle.getPropertyValue('--mui-palette-secondary-main').trim();
+        if (pVal.startsWith('#')) activePrimary = pVal;
+        if (sVal.startsWith('#')) activeSecondary = sVal;
+      }
+
+      const colorPrimary = hexToRgb(activePrimary);
+      const colorSecondary = hexToRgb(activeSecondary);
 
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -338,7 +383,9 @@ export default function ShaderBackground() {
 
         // Upload Uniforms
         gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), glW, glH);
-        gl.uniform1f(gl.getUniformLocation(program, 'u_time'), timeSecs);
+        gl.uniform1f(gl.getUniformLocation(program, 'u_time'), accumulatedTime);
+        gl.uniform1f(gl.getUniformLocation(program, 'u_audio_bass'), smoothBass);
+        gl.uniform1f(gl.getUniformLocation(program, 'u_audio_treble'), smoothTreble);
         
         // Scale mouse position to WebGL low-res canvas coordinate system
         const scaleX = glW / w;
@@ -371,9 +418,10 @@ export default function ShaderBackground() {
         for (let i = 0; i < nodes.length; i++) {
           const n = nodes[i];
 
-          // Slow floating motion
-          n.x += n.vx;
-          n.y += n.vy;
+          // Slow floating motion scales with low frequencies (bass), drifts slowly when paused
+          const nodeSpeedFactor = isPlaying ? (0.6 + smoothBass * 1.8) : 0.20;
+          n.x += n.vx * nodeSpeedFactor;
+          n.y += n.vy * nodeSpeedFactor;
 
           // Boundary wrap/bounce
           if (n.x < -10) n.x = w + 10;
@@ -387,9 +435,8 @@ export default function ShaderBackground() {
             const dy = n.y - mouse.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            // Repel nodes if they are within mouse aura (e.g. 180px)
+            // Repel nodes if they are within mouse aura
             if (dist < 180 && dist > 1) {
-              // Closer foreground nodes (larger z) are repelled more strongly
               const force = (180 - dist) * 0.00045 * (n.z * 1.1);
               n.x += (dx / dist) * force;
               n.y += (dy / dist) * force;
@@ -403,13 +450,13 @@ export default function ShaderBackground() {
             const dy = mouse.y - n.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < 150) {
-              // Increase node opacity near cursor for focus glow
               alpha = n.baseAlpha + (0.9 - n.baseAlpha) * (1.0 - dist / 150) * 0.5;
             }
           }
 
-          // Pulsing glow factor
-          const pulse = Math.sin(timeSecs * 2.2 + n.pulseOffset) * 0.45 + 0.55; // Range 0.1 to 1.0
+          // Pulsing glow factor boosted by mid frequencies
+          const audioPulse = smoothMid * 2.2;
+          const pulse = (Math.sin(accumulatedTime * 2.2 + n.pulseOffset) * 0.45 + 0.55) * (1.0 + audioPulse);
 
           // Draw pulsing outer glow circle
           ctx.beginPath();
@@ -417,9 +464,10 @@ export default function ShaderBackground() {
           ctx.fillStyle = `rgba(${colorPrimary[0] * 255}, ${colorPrimary[1] * 255}, ${colorPrimary[2] * 255}, ${alpha * 0.18 * pulse})`;
           ctx.fill();
 
-          // Draw sharp inner node point
+          // Draw sharp inner node point (radius pulses with high frequencies)
+          const activeRadius = n.radius * (1.0 + smoothTreble * 0.5);
           ctx.beginPath();
-          ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+          ctx.arc(n.x, n.y, activeRadius, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(${colorPrimary[0] * 255}, ${colorPrimary[1] * 255}, ${colorPrimary[2] * 255}, ${alpha})`;
           ctx.fill();
         }
@@ -436,10 +484,7 @@ export default function ShaderBackground() {
 
             // Connect if close in viewport coordinates
             if (dist < connectionDist) {
-              // Average depth of the two nodes
               const avgZ = (n1.z + n2.z) * 0.5;
-              
-              // Scale connection threshold & opacity by average depth (parallax web depth)
               const alphaFactor = 1.0 - dist / connectionDist;
               
               // Base line opacity
@@ -447,11 +492,14 @@ export default function ShaderBackground() {
                 ? alphaFactor * 0.15 * (avgZ * 0.8)
                 : alphaFactor * 0.08 * (avgZ * 0.6);
 
-              ctx.lineWidth = 0.5 * avgZ; // Foreground lines are slightly thicker
+              // Boost connections on beat
+              const activeOpacity = opacity * (1.0 + smoothBass * 4.0);
+
+              ctx.lineWidth = 0.5 * avgZ * (1.0 + smoothMid * 1.8);
               ctx.beginPath();
               ctx.moveTo(n1.x, n1.y);
               ctx.lineTo(n2.x, n2.y);
-              ctx.strokeStyle = `rgba(${colorPrimary[0] * 255}, ${colorPrimary[1] * 255}, ${colorPrimary[2] * 255}, ${opacity})`;
+              ctx.strokeStyle = `rgba(${colorPrimary[0] * 255}, ${colorPrimary[1] * 255}, ${colorPrimary[2] * 255}, ${activeOpacity})`;
               ctx.stroke();
             }
           }

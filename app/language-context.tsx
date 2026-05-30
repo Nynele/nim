@@ -175,8 +175,7 @@ const translations: Record<Language, Record<string, string>> = {
     'pitch.example.mod.btn.history': 'Historial',
     'pitch.example.mod.btn.dismiss': 'Descartar',
     'pitch.example.mod.btn.evidence': 'Evidencia',
-    // MeliasBot Example
-    'pitch.example.notif.msg': '📹 ¡Melias acaba de hacer empezar directo en Twitch!\nhttps://twitch.tv/meliasoficial\n@Mención - Directos',
+    'pitch.example.notif.msg': '📹 ¡Melias acaba de empezar directo en Twitch!\nhttps://twitch.tv/meliasoficial\n@Mención - Directos',
     'pitch.example.notif.embed.title': 'Twitch',
     'pitch.example.notif.embed.desc': 'meliasoficial - Twitch',
     // Normativas Example
@@ -192,7 +191,7 @@ const translations: Record<Language, Record<string, string>> = {
     'pitch.example.rules.f5': '🔴 Privacidad',
     'pitch.example.rules.f5.v': 'No compartas información personal de ningún tipo.',
     'pitch.example.rules.f6': '🔴 Moderación',
-    'pitch.example.rules.f6.v': 'No pongas en duda las desiciones del personal.',
+    'pitch.example.rules.f6.v': 'No pongas en duda las decisiones del personal.',
     'pitch.example.rules.footer': 'En caso de dudas, visita la info del servidor, o contacta con el personal.',
     'pitch.example.rules.btn1': 'Revisar la normativa',
     'pitch.example.rules.btn2': 'Ver información',

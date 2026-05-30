@@ -18,6 +18,7 @@ import {
   Skeleton,
   Menu,
   MenuItem,
+  Tooltip,
 } from '@mui/material';
 
 import {
@@ -331,6 +332,7 @@ function ProjectImage({ src, alt }: { src: string; alt: string }) {
 // ── Discord Profile Widget ─────────────────────────────────────────────
 function DiscordProfile() {
   const [data, setData] = useState<any>(null);
+  const [badges, setBadges] = useState<any[]>([]);
   const { t } = useLanguage();
   const DISCORD_ID = '799251427839049818';
 
@@ -341,6 +343,56 @@ function DiscordProfile() {
       const json = await res.json();
       if (json.success) setData(json.data);
     } catch (e) { console.error(e); }
+
+    // Fetch badges from dstn.to and equicord.org
+    try {
+      const resolvedBadges: any[] = [];
+
+      // 1. dstn.to Badges
+      try {
+        const dstnRes = await fetch(`https://dcdn.dstn.to/profile/${DISCORD_ID}`);
+        if (dstnRes.ok) {
+          const dstnJson = await dstnRes.json();
+          if (dstnJson && dstnJson.badges) {
+            dstnJson.badges.forEach((b: any) => {
+              resolvedBadges.push({
+                id: b.id,
+                description: b.description,
+                iconUrl: `https://cdn.discordapp.com/badge-icons/${b.icon}.png`,
+                link: b.link
+              });
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch dstn.to badges:", e);
+      }
+
+      // 2. Equicord Badges
+      try {
+        const equiRes = await fetch(`https://badges.equicord.org/${DISCORD_ID}`);
+        if (equiRes.ok) {
+          const equiJson = await equiRes.json();
+          if (equiJson && equiJson.badges) {
+            const translatorBadge = equiJson.badges.find((b: any) => b.tooltip === 'Equicord Translator');
+            if (translatorBadge) {
+              resolvedBadges.push({
+                id: 'equicord_translator',
+                description: translatorBadge.tooltip,
+                iconUrl: translatorBadge.badge,
+                link: 'https://equicord.org'
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch equicord badges:", e);
+      }
+
+      setBadges(resolvedBadges);
+    } catch (e) {
+      console.error("Failed to resolve badges:", e);
+    }
   }, [DISCORD_ID]);
 
   useEffect(() => {
@@ -401,8 +453,8 @@ function DiscordProfile() {
       transition: 'all 0.3s ease',
       '&:hover': { borderColor: 'primary.main', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }
     }}>
-      {/* Header: Avatar + Name + Status */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+      {/* Header: Avatar & Custom Status Speech Bubble */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5, position: 'relative' }}>
         <Box sx={{ position: 'relative', width: AVATAR_SIZE, height: AVATAR_SIZE }}>
           {/* Avatar decoration */}
           {decorationUrl && (
@@ -434,59 +486,134 @@ function DiscordProfile() {
           }} />
         </Box>
 
-        <Box sx={{ minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 900, lineHeight: 1, mb: 0.6 }}>
-                {user.global_name || user.username}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                <Chip
-                  label={`@${user.username}`}
-                  size="small"
-                  sx={{ height: 16, fontSize: '0.6rem', fontWeight: 'bold', borderRadius: '4px', bgcolor: 'action.hover' }}
-                />
-                <Box sx={{ display: 'flex', gap: 0.3, opacity: 0.5 }}>
-                  {data.active_on_discord_desktop && <ComputerIcon sx={{ fontSize: 12 }} />}
-                  {data.active_on_discord_mobile && <SmartphoneIcon sx={{ fontSize: 12 }} />}
-                  {data.active_on_discord_web && <WebIcon sx={{ fontSize: 12 }} />}
-                  {data.active_on_discord_vr && <VrIcon sx={{ width: 14, height: 14 }} />}
-                </Box>
-              </Box>
-            </Box>
-            <LocalTime />
-          </Box>
-          {/* Custom Status - Integrated below name */}
-          {(() => {
-            const customStatus = data.activities?.find((a: any) => a.type === 4);
-            if (!customStatus) return null;
-            const emoji = customStatus.emoji;
-            return (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 500, fontStyle: 'italic', opacity: 0.9 }}>
-                {emoji && (
-                  emoji.id ? (
-                    <Box
-                      component="img"
-                      src={`https://cdn.discordapp.com/emojis/${emoji.id}.${emoji.animated ? 'gif' : 'png'}`}
-                      alt={emoji.name}
-                      sx={{ width: 18, height: 18, objectFit: 'contain', display: 'inline-block', verticalAlign: 'middle', mr: 0.2 }}
-                    />
-                  ) : (
-                    <span>{emoji.name}</span>
-                  )
-                )}
+        {/* Speech Bubble (Custom Status) pointing to Avatar */}
+        {(() => {
+          const customStatus = data.activities?.find((a: any) => a.type === 4);
+          if (!customStatus) return null;
+          const emoji = customStatus.emoji;
+          return (
+            <Box sx={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.8,
+              px: 1.5,
+              py: 0.6,
+              borderRadius: '14px',
+              bgcolor: 'background.paper',
+              border: 1,
+              borderColor: 'divider',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              maxWidth: '220px',
+              zIndex: 4,
+              '&::after, &::before': {
+                content: '""',
+                position: 'absolute',
+                right: '100%',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                borderStyle: 'solid'
+              },
+              '&::after': {
+                borderWidth: '6px',
+                borderColor: 'transparent var(--mui-palette-background-paper) transparent transparent',
+                marginLeft: '1.5px'
+              },
+              '&::before': {
+                borderWidth: '7px',
+                borderColor: 'transparent var(--mui-palette-divider) transparent transparent'
+              }
+            }}>
+              {emoji && (
+                emoji.id ? (
+                  <Box
+                    component="img"
+                    src={`https://cdn.discordapp.com/emojis/${emoji.id}.${emoji.animated ? 'gif' : 'png'}`}
+                    alt={emoji.name}
+                    sx={{ width: 16, height: 16, objectFit: 'contain' }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '1rem', lineHeight: 1 }}>{emoji.name}</span>
+                )
+              )}
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.75rem', lineHeight: 1.2 }}>
                 {customStatus.state}
               </Typography>
-            );
-          })()}
+            </Box>
+          );
+        })()}
+      </Box>
+
+      {/* Profile User Info Column */}
+      <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', mb: 1.5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0, mb: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 900, lineHeight: 1.1 }}>
+              {user.global_name || user.username}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Chip
+                label={`@${user.username}`}
+                size="small"
+                sx={{ height: 18, fontSize: '0.65rem', fontWeight: 'bold', borderRadius: '6px', bgcolor: 'action.hover' }}
+              />
+              <Box sx={{ display: 'flex', gap: 0.3, opacity: 0.5 }}>
+                {data.active_on_discord_desktop && <ComputerIcon sx={{ fontSize: 13 }} />}
+                {data.active_on_discord_mobile && <SmartphoneIcon sx={{ fontSize: 13 }} />}
+                {data.active_on_discord_web && <WebIcon sx={{ fontSize: 13 }} />}
+                {data.active_on_discord_vr && <VrIcon sx={{ width: 14, height: 14 }} />}
+              </Box>
+            </Box>
+          </Box>
+          <LocalTime />
         </Box>
+
+        {/* Profile Badges Capsule (Discord-style) */}
+        {badges && badges.length > 0 && (
+          <Box sx={{
+            display: 'flex',
+            gap: 0.6,
+            alignItems: 'center',
+            px: 1,
+            py: 0.3,
+            borderRadius: '8px',
+            bgcolor: 'rgba(0, 0, 0, 0.15)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            alignSelf: 'flex-start',
+            boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.2)'
+          }}>
+            {badges.map((badge: any) => (
+              <Tooltip key={badge.id} title={badge.description} arrow>
+                <Box
+                  component="a"
+                  href={badge.link || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    '&:hover': { transform: 'scale(1.2)' }
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={badge.iconUrl}
+                    alt={badge.description}
+                    sx={{ width: 16, height: 16, objectFit: 'contain' }}
+                  />
+                </Box>
+              </Tooltip>
+            ))}
+          </Box>
+        )}
       </Box>
 
       {/* Body: All Activities */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
         {data.activities && data.activities.length > 0 ? (
           data.activities.map((activity: any, idx: number) => {
-            // Skip custom status (already shown)
+            // Skip custom status (already shown in speech bubble)
             if (activity.type === 4) return null;
 
             let imageUrl = null;
