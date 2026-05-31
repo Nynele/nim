@@ -968,20 +968,23 @@ export default function Personal() {
 
         {/* PROJECTS SECTION */}
         <ScrollReveal>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
+          <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold', mb: 4, display: 'flex', alignItems: 'center', gap: 1.2 }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'primary.main', flexShrink: 0 }} />
             <FadeText inline>{t('section.projects')}</FadeText>
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 4, mb: 12 }}>
             {PROJECTS.map((project: any, idx: number) => (
               <ScrollReveal key={project.id} delay={idx * 0.1}>
-                <Card elevation={2} suppressHydrationWarning sx={{
-                  transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: 8 },
+                <Card elevation={0} suppressHydrationWarning sx={{
+                  transition: 'all 0.2s',
+                  border: 1,
+                  borderColor: 'divider',
+                  '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
                   '&:hover img': { transform: 'scale(1.025)' },
                   borderRadius: '24px',
                   overflow: 'hidden',
                   height: '100%',
-                  transform: 'translateZ(0)', // Force GPU acceleration to avoid rendering artifacts
+                  transform: 'translateZ(0)',
                   backfaceVisibility: 'hidden',
                 }}>
                   <CardActionArea href={project.link} target="_blank" sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
@@ -1007,7 +1010,7 @@ export default function Personal() {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>{project.name}</Typography>
                         {project.verified && <VerifiedIcon color="primary" sx={{ fontSize: 20 }} />}
-                        <ArrowOutwardIcon sx={{ ml: 'auto', opacity: 0.4, fontSize: 18 }} />
+                        <ArrowOutwardIcon sx={{ ml: 'auto', color: 'primary.main', opacity: 0.7, fontSize: 18 }} />
                       </Box>
                       <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                         <FadeText>
