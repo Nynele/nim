@@ -14,10 +14,11 @@ import { AudioManager } from '../lib/audio-manager';
 import { useLanguage } from '../app/language-context';
 
 export default function AudioPlayerWidget() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
+  const [artistText, setArtistText] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -30,12 +31,14 @@ export default function AudioPlayerWidget() {
       setIsPlaying(manager.isPlaying);
       setCurrentTrackIndex(manager.currentTrackIndex);
       setYoutubeVideoId(manager.youtubeVideoId);
+      setArtistText(manager.tracks[manager.currentTrackIndex]?.artist ?? '');
     });
 
     // Sync initial state
     setIsPlaying(manager.isPlaying);
     setCurrentTrackIndex(manager.currentTrackIndex);
     setYoutubeVideoId(manager.youtubeVideoId);
+    setArtistText(manager.tracks[manager.currentTrackIndex]?.artist ?? '');
 
     // Sync Discord presence on mount if live track is selected
     if (manager.currentTrackIndex === 0) {
@@ -44,6 +47,29 @@ export default function AudioPlayerWidget() {
 
     return () => unsubscribe();
   }, []);
+
+  // Sync translated labels into AudioManager whenever language changes
+  useEffect(() => {
+    const manager = AudioManager.getInstance();
+    manager.setLabels({
+      syncing:         t('audio.status.syncing'),
+      connecting:      t('audio.status.connecting'),
+      searchingAlt:    (n: number) => t('audio.status.searching_alt').replace('{n}', String(n)),
+      searching:       (title: string) => t('audio.status.searching').replace('{title}', title),
+      ytmSynced:       t('audio.status.ytm_synced'),
+      ytmAlt:          (n: number) => t('audio.status.ytm_alt').replace('{n}', String(n)),
+      spotifySynced:   t('audio.status.spotify_synced'),
+      spotifyAlt:      (n: number) => t('audio.status.spotify_alt').replace('{n}', String(n)),
+      albumSynced:     t('audio.status.album_synced'),
+      albumAlt:        (n: number) => t('audio.status.album_alt').replace('{n}', String(n)),
+      noMusicTitle:    t('audio.status.no_music_title'),
+      noMusicArtist:   t('audio.status.no_music_artist'),
+      searchFailed:    t('audio.status.search_failed'),
+      syncErrorTitle:  t('audio.status.sync_error_title'),
+      syncErrorArtist: t('audio.status.sync_error_artist'),
+    });
+  }, [language, t]);
+
 
   if (!mounted) return null;
 
@@ -157,7 +183,7 @@ export default function AudioPlayerWidget() {
             textOverflow: 'ellipsis'
           }}
         >
-          {currentTrack.id === 'live' ? currentTrack.artist : (isPlaying ? t('audio.playing_lofi') : t('audio.lofi_background'))}
+          {currentTrack.id === 'live' ? artistText : (isPlaying ? t('audio.playing_lofi') : t('audio.lofi_background'))}
         </Typography>
         <Typography 
           variant="caption" 

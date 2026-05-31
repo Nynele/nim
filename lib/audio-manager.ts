@@ -326,6 +326,39 @@ export class AudioManager {
   public youtubeCurrentTime = 0;
   public lastYoutubeTimeUpdate = 0;
 
+  public labels = {
+    syncing:          'Syncing with Discord...',
+    connecting:       'Connecting to Discord presence...',
+    searchingAlt:     (n: number) => `Searching alternate version #${n}...`,
+    searching:        (t: string) => `Searching "${t}" on YouTube...`,
+    ytmSynced:        'Synced with YouTube Music',
+    ytmAlt:           (n: number) => `YTM (Alt Version #${n})`,
+    spotifySynced:    'Synced with Spotify',
+    spotifyAlt:       (n: number) => `Spotify (Alt Version #${n})`,
+    albumSynced:      'Most Listened Album',
+    albumAlt:         (n: number) => `Album (Alt Version #${n})`,
+    noMusicTitle:     'No Music Detected',
+    noMusicArtist:    'Open Spotify or YouTube Music on Discord',
+    searchFailed:     'Failed to find song on YouTube',
+    syncErrorTitle:   'Sync Error',
+    syncErrorArtist:  'Failed to sync with Discord',
+  };
+
+  // Tracks which simple string label key is currently shown as tracks[0].artist
+  private currentArtistLabelKey: string | null = null;
+
+  public setLabels(labels: Partial<typeof this.labels>) {
+    Object.assign(this.labels, labels);
+    // Immediately re-apply the active label so the widget reflects the new language
+    if (this.currentArtistLabelKey) {
+      const val = (this.labels as any)[this.currentArtistLabelKey];
+      if (typeof val === 'string') {
+        this.tracks[0].artist = val;
+        this.notifyListeners();
+      }
+    }
+  }
+
   public tracks = [
     {
       id: 'live',
@@ -545,7 +578,7 @@ export class AudioManager {
 
     const DISCORD_ID = '799251427839049818';
     if (!silent) {
-      this.tracks[0].artist = 'Connecting to Discord presence...';
+      this.tracks[0].artist = this.labels.connecting;
       this.notifyListeners();
     }
 
@@ -648,9 +681,9 @@ export class AudioManager {
 
           this.tracks[0].title = songTitle;
           if (!silent) {
-            this.tracks[0].artist = this.youtubeSearchOffset > 0 
-              ? `Searching alternate version #${this.youtubeSearchOffset + 1}...`
-              : `Searching "${songTitle}" on YouTube...`;
+            this.tracks[0].artist = this.youtubeSearchOffset > 0
+              ? this.labels.searchingAlt(this.youtubeSearchOffset + 1)
+              : this.labels.searching(songTitle);
             this.notifyListeners();
           }
 
@@ -676,15 +709,16 @@ export class AudioManager {
             }
           }
 
-          const artistLabel = isYTM 
-            ? (this.youtubeSearchOffset > 0 ? `YTM (Alt Version #${this.youtubeSearchOffset + 1})` : 'Synced with YouTube Music') 
-            : (spotifyActive 
-                ? (this.youtubeSearchOffset > 0 ? `Spotify (Alt Version #${this.youtubeSearchOffset + 1})` : 'Synced with Spotify')
-                : (this.youtubeSearchOffset > 0 ? `Album (Alt Version #${this.youtubeSearchOffset + 1})` : 'Most Listened Album'));
+          const artistLabel = isYTM
+            ? (this.youtubeSearchOffset > 0 ? this.labels.ytmAlt(this.youtubeSearchOffset + 1) : this.labels.ytmSynced)
+            : (spotifyActive
+                ? (this.youtubeSearchOffset > 0 ? this.labels.spotifyAlt(this.youtubeSearchOffset + 1) : this.labels.spotifySynced)
+                : (this.youtubeSearchOffset > 0 ? this.labels.albumAlt(this.youtubeSearchOffset + 1) : this.labels.albumSynced));
 
           if (extractedVideoId) {
             this.youtubeVideoId = extractedVideoId;
             this.tracks[0].artist = artistLabel;
+            this.currentArtistLabelKey = isYTM ? 'ytmSynced' : (spotifyActive ? 'spotifySynced' : 'albumSynced');
             this.notifyListeners();
             if (this.isPlaying) {
               // Trigger reload or play
@@ -696,19 +730,22 @@ export class AudioManager {
             if (videoId) {
               this.youtubeVideoId = videoId;
               this.tracks[0].artist = artistLabel;
+              this.currentArtistLabelKey = isYTM ? 'ytmSynced' : (spotifyActive ? 'spotifySynced' : 'albumSynced');
               this.notifyListeners();
               if (this.isPlaying) {
                 setTimeout(() => this.play(), 100);
               }
             } else {
               this.tracks[0].title = 'Search Failed';
-              this.tracks[0].artist = 'Failed to find song on YouTube';
+              this.tracks[0].artist = this.labels.searchFailed;
+              this.currentArtistLabelKey = 'searchFailed';
               this.notifyListeners();
             }
           }
         } else {
-          this.tracks[0].title = 'No Music Detected';
-          this.tracks[0].artist = 'Open Spotify or YouTube Music on Discord';
+          this.tracks[0].title = this.labels.noMusicTitle;
+          this.tracks[0].artist = this.labels.noMusicArtist;
+          this.currentArtistLabelKey = 'noMusicArtist';
           this.youtubeVideoId = null;
           this.coverUrl = null;
           this.coverColors = null;
@@ -719,8 +756,9 @@ export class AudioManager {
     } catch (err) {
       console.error("Lanyard fetch failed:", err);
       if (!silent) {
-        this.tracks[0].title = 'Sync Error';
-        this.tracks[0].artist = 'Failed to sync with Discord';
+        this.tracks[0].title = this.labels.syncErrorTitle;
+        this.tracks[0].artist = this.labels.syncErrorArtist;
+        this.currentArtistLabelKey = 'syncErrorArtist';
         this.notifyListeners();
       }
     }

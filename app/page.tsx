@@ -707,11 +707,11 @@ function DiscordProfile() {
           const emoji = customStatus.emoji;
           return (
             <Box sx={{
-              position: 'relative',
               display: 'flex',
               alignItems: 'center',
               gap: 0.8,
-              px: 1.5,
+              pl: 0.8,
+              pr: 1.5,
               py: 0.6,
               borderRadius: '14px',
               bgcolor: 'background.paper',
@@ -720,32 +720,6 @@ function DiscordProfile() {
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               maxWidth: '220px',
               zIndex: 4,
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                right: '100%',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 0,
-                height: 0,
-                borderStyle: 'solid',
-                borderWidth: '7px 7px 7px 0',
-                borderColor: 'transparent var(--mui-palette-divider) transparent transparent',
-                pointerEvents: 'none'
-              },
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                right: 'calc(100% - 1px)',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 0,
-                height: 0,
-                borderStyle: 'solid',
-                borderWidth: '6px 6px 6px 0',
-                borderColor: 'transparent var(--mui-palette-background-paper) transparent transparent',
-                pointerEvents: 'none'
-              }
             }}>
               {emoji && (
                 emoji.id ? (
