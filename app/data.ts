@@ -26,6 +26,15 @@ export type WorkExperience = {
   verified?: boolean
 }
 
+export type Repository = {
+  name: string
+  description: LocalizedString
+  language: string
+  languageColor: string
+  link: string
+  id: string
+}
+
 export const PROJECTS: Project[] = [
   {
     name: 'EngineFall',
@@ -60,6 +69,54 @@ export const PROJECTS: Project[] = [
     ],
     id: 'project-roe',
     verified: true,
+  },
+]
+
+export const REPOSITORIES: Repository[] = [
+  {
+    name: 'Dagger Designer',
+    description: {
+      en: 'Interactive web application for designing and visualizing tactical daggers and custom layouts.',
+      es: 'Aplicación web interactiva para diseñar y visualizar dagas tácticas y esquemas personalizados.',
+      it: 'Applicazione web interattiva per progettare e visualizzare pugnali tattici e layout personalizzati.',
+      fr: 'Application web interactive pour concevoir et visualiser des dagues tactiques et des configurations personnalisées.',
+      de: 'Interaktive Web-Anwendung zum Entwerfen und Visualisieren von taktischen Dolchen und benutzerdefinierten Layouts.',
+      pt: 'Aplicativo web interativo para projetar e visualizar adagas táticas e layouts personalizados.'
+    },
+    language: 'JavaScript',
+    languageColor: '#f1e05a',
+    link: 'https://dagger-designer.vercel.app/',
+    id: 'repo-dagger-designer',
+  },
+  {
+    name: 'QR ASCII Maker',
+    description: {
+      en: 'A command-line tool that generates QR codes rendered in ASCII art directly inside the terminal.',
+      es: 'Una herramienta de línea de comandos que genera códigos QR renderizados en arte ASCII directamente en la terminal.',
+      it: 'Uno strumento da riga di comando che genera codici QR renderizzati in formato ASCII direttamente nel terminale.',
+      fr: 'Un outil en ligne de commande qui génère des codes QR rendus en art ASCII directement dans le terminal.',
+      de: 'Ein Befehlszeilenwerkzeug, das direkt im Terminal gerenderte QR-Codes im ASCII-Format erzeugt.',
+      pt: 'Uma ferramenta de linha de comando que gera códigos QR renderizados en arte ASCII diretamente no terminal.'
+    },
+    language: 'Python',
+    languageColor: '#3572A5',
+    link: 'https://github.com/Nynele/QR-Ascii-Maker',
+    id: 'repo-qr-ascii-maker',
+  },
+  {
+    name: 'Discord Webhook Builder & Sender for Obsidian',
+    description: {
+      en: 'Obsidian plugin to design, test, and send Discord Webhook messages directly from your notes.',
+      es: 'Plugin de Obsidian para diseñar, probar y enviar mensajes de Discord Webhook directamente desde tus notas.',
+      it: 'Plugin di Obsidian per progettare, testare e inviare messaggi Webhook di Discord direttamente dalle tue note.',
+      fr: 'Plugin Obsidian pour concevoir, tester et envoyer des messages Discord Webhook directement depuis vos notes.',
+      de: 'Obsidian-Plugin zum Entwerfen, Testen und Senden von Discord-Webhook-Nachrichten direkt aus Ihren Notizen.',
+      pt: 'Plugin do Obsidian para projetar, testar e enviar mensagens de Webhook do Discord diretamente de suas notas.'
+    },
+    language: 'JavaScript',
+    languageColor: '#f1e05a',
+    link: 'https://github.com/Nynele/Discord-Webhook-builder-Sender-for-Obsidian',
+    id: 'repo-discord-webhook-obsidian',
   },
 ]
 
@@ -199,6 +256,7 @@ export const SOCIAL_LINKS = {
   github: 'https://github.com/Nynele',
   twitter: 'https://twitter.com/nynele',
   discord: 'https://discord.com/users/799251427839049818',
+  kofi: 'https://ko-fi.com/nynele',
 };
 
 export const EMAIL = 'nyneletwitch@gmail.com'

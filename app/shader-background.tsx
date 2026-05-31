@@ -63,7 +63,7 @@ const FS_SOURCE = `
     vec2 shift = vec2(100.0);
     // Rotate octaves to eliminate grid alignment artifacts
     mat2 rot = mat2(0.87758, 0.47942, -0.47942, 0.87758);
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; i++) {
       v += a * noise(p);
       p = rot * p * 2.0 + shift;
       a *= 0.5;
@@ -299,9 +299,10 @@ export default function ShaderBackground() {
 
     // Render loop
     const render = () => {
-      const now = Date.now();
-      const delta = (now - lastTime) * 0.001;
-      lastTime = now;
+      try {
+        const now = Date.now();
+        const delta = (now - lastTime) * 0.001;
+        lastTime = now;
 
       const manager = AudioManager.getInstance();
       const isPlaying = manager.isPlaying;
@@ -344,23 +345,28 @@ export default function ShaderBackground() {
 
       // 1. Render WebGL Fluid Background
       if (gl && program && glCanvasRef.current) {
-        const glW = glCanvasRef.current.width;
-        const glH = glCanvasRef.current.height;
-        gl.viewport(0, 0, glW, glH);
+        try {
+          const glW = glCanvasRef.current.width;
+          const glH = glCanvasRef.current.height;
+          gl.viewport(0, 0, glW, glH);
 
-        gl.useProgram(program);
+          gl.useProgram(program);
 
-        // Upload Uniforms
-        gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), glW, glH);
-        gl.uniform1f(gl.getUniformLocation(program, 'u_time'), accumulatedTime);
-        gl.uniform1f(gl.getUniformLocation(program, 'u_audio_bass'), smoothBass);
-        gl.uniform1f(gl.getUniformLocation(program, 'u_audio_treble'), smoothTreble);
+          // Upload Uniforms
+          gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), glW, glH);
+          gl.uniform1f(gl.getUniformLocation(program, 'u_time'), accumulatedTime);
+          gl.uniform1f(gl.getUniformLocation(program, 'u_audio_bass'), smoothBass);
+          gl.uniform1f(gl.getUniformLocation(program, 'u_audio_treble'), smoothTreble);
 
-        gl.uniform3f(gl.getUniformLocation(program, 'u_color_bg'), colorBg[0], colorBg[1], colorBg[2]);
-        gl.uniform3f(gl.getUniformLocation(program, 'u_color_primary'), colorPrimary[0], colorPrimary[1], colorPrimary[2]);
-        gl.uniform3f(gl.getUniformLocation(program, 'u_color_secondary'), colorSecondary[0], colorSecondary[1], colorSecondary[2]);
+          gl.uniform3f(gl.getUniformLocation(program, 'u_color_bg'), colorBg[0], colorBg[1], colorBg[2]);
+          gl.uniform3f(gl.getUniformLocation(program, 'u_color_primary'), colorPrimary[0], colorPrimary[1], colorPrimary[2]);
+          gl.uniform3f(gl.getUniformLocation(program, 'u_color_secondary'), colorSecondary[0], colorSecondary[1], colorSecondary[2]);
 
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+        } catch (webglError) {
+          console.error("WebGL rendering failed, disabling WebGL fallback:", webglError);
+          gl = null; // Disable WebGL rendering for subsequent frames
+        }
       }
 
       // 2. Render Constellation Nodes
@@ -442,6 +448,9 @@ export default function ShaderBackground() {
         }
 
         ctx.restore();
+      }
+      } catch (renderError) {
+        console.error("Render loop crashed:", renderError);
       }
 
       animationFrameId = requestAnimationFrame(render);

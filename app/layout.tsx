@@ -44,6 +44,44 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              // Debug overlay for errors
+              window.addEventListener('error', (event) => {
+                const el = document.createElement('div');
+                el.style.position = 'fixed';
+                el.style.bottom = '10px';
+                el.style.left = '10px';
+                el.style.background = 'rgba(255, 0, 0, 0.9)';
+                el.style.color = 'white';
+                el.style.padding = '10px';
+                el.style.zIndex = '99999';
+                el.style.fontSize = '12px';
+                el.style.fontFamily = 'monospace';
+                el.style.maxHeight = '200px';
+                el.style.overflow = 'auto';
+                el.innerText = 'ERROR: ' + event.message + '\\nSource: ' + event.filename + ':' + event.lineno;
+                document.body.appendChild(el);
+              });
+              
+              window.addEventListener('unhandledrejection', (event) => {
+                const el = document.createElement('div');
+                el.style.position = 'fixed';
+                el.style.bottom = '10px';
+                el.style.left = '10px';
+                el.style.background = 'rgba(255, 0, 0, 0.9)';
+                el.style.color = 'white';
+                el.style.padding = '10px';
+                el.style.zIndex = '99999';
+                el.style.fontSize = '12px';
+                el.style.fontFamily = 'monospace';
+                el.innerText = 'PROMISE REJECTION: ' + event.reason;
+                document.body.appendChild(el);
+              });
+            `
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
               // Block right click
               document.addEventListener('contextmenu', (e) => e.preventDefault());
 

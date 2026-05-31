@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import {
   Typography,
   Button,
@@ -30,6 +31,21 @@ import { SOCIAL_LINKS, PROJECTS, WORK_EXPERIENCE } from '../data';
 import DiscordMessage from '../../components/discord-message';
 import BotBuilder from '../../components/bot-builder';
 import ShaderBackground from '../shader-background';
+
+function FadeText({ children, inline = false }: { children: React.ReactNode; inline?: boolean }) {
+  const { language } = useLanguage();
+  return (
+    <motion.span
+      key={language}
+      initial={{ opacity: 0.35, filter: 'blur(4px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      style={{ display: inline ? 'inline-block' : 'block' }}
+    >
+      {children}
+    </motion.span>
+  );
+}
 
 // In-memory flag to prevent reloading animations on language/route change
 let hasAnimated = false;
@@ -87,6 +103,7 @@ function LanguageSwitch() {
         anchorEl={anchorEl}
         open={open}
         onClose={() => handleClose()}
+        disableScrollLock
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         slotProps={{
@@ -253,13 +270,106 @@ function LanguageSwitch() {
 }
 
 function TopAppBar() {
+  const { t } = useLanguage();
   return (
-    <AppBar position="sticky" color="transparent" elevation={0} sx={{ backdropFilter: 'blur(12px)', borderBottom: 1, borderColor: 'divider' }} suppressHydrationWarning>
-      <Toolbar sx={{ justifyContent: 'space-between', maxWidth: 'lg', width: '100%', mx: 'auto' }}>
-        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
+    <AppBar
+      position="fixed"
+      color="transparent"
+      elevation={0}
+      sx={{
+        top: { xs: '12px', md: '20px' },
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 'calc(100% - 24px)',
+        maxWidth: '800px',
+        zIndex: 1100,
+        borderRadius: '30px',
+        border: '1px solid',
+        borderColor: 'rgba(255, 255, 255, 0.08)',
+        background: 'rgba(20, 18, 24, 0.65)',
+        backdropFilter: 'blur(20px) saturate(190%)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          boxShadow: '0 12px 40px 0 rgba(0, 0, 0, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15)',
+        },
+        '[data-mui-color-scheme="light"] &': {
+          background: 'rgba(255, 255, 255, 0.65)',
+          borderColor: 'rgba(0, 0, 0, 0.06)',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.5)',
+          '&:hover': {
+            borderColor: 'rgba(0, 0, 0, 0.12)',
+            boxShadow: '0 12px 40px 0 rgba(31, 38, 135, 0.12), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6)',
+          }
+        }
+      }}
+      suppressHydrationWarning
+    >
+      <Toolbar sx={{ justifyContent: 'space-between', width: '100%', px: 3, minHeight: '64px', position: 'relative' }}>
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{ fontWeight: 'bold', cursor: 'pointer' }}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        >
           Nynele
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+
+        {/* Center Navigation Links */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 1, md: 1.5 }
+          }}
+        >
+          <Button
+            component={Link}
+            href="/"
+            sx={{
+              borderRadius: '20px',
+              px: 2,
+              py: 0.5,
+              fontWeight: 'medium',
+              textTransform: 'none',
+              color: 'text.secondary',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                color: 'text.primary',
+                bgcolor: 'action.hover',
+              }
+            }}
+          >
+            {t('nav.home')}
+          </Button>
+          <Button
+            component={Link}
+            href="/showcase"
+            sx={{
+              borderRadius: '20px',
+              px: 2,
+              py: 0.5,
+              fontWeight: 'bold',
+              textTransform: 'none',
+              color: 'primary.main',
+              bgcolor: 'action.selected',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: 'action.hover',
+                color: 'primary.main',
+              }
+            }}
+          >
+            {t('nav.showcase')}
+          </Button>
+        </Box>
+
+        {/* Right side controls */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <LanguageSwitch />
           <ThemeSwitch />
         </Box>
@@ -295,8 +405,12 @@ function FeatureShowcase({ title, description, reverse, message }: { title: stri
             viewport={{ once: true }} 
             transition={skip ? { duration: 0 } : { duration: 0.5, ease: [0.2, 0.65, 0.3, 0.9] }}
           >
-            <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, letterSpacing: '-0.02em', fontSize: { xs: '2rem', md: '3rem' } }}>{title}</Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary', fontSize: '1.1rem', lineHeight: 1.7 }}>{description}</Typography>
+            <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, letterSpacing: '-0.02em', fontSize: { xs: '2rem', md: '3rem' } }}>
+              <FadeText inline>{title}</FadeText>
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'text.secondary', fontSize: '1.1rem', lineHeight: 1.7 }}>
+              <FadeText>{description}</FadeText>
+            </Typography>
           </motion.div>
         </Box>
         <Box sx={{ flex: 1, width: '100%' }}>
@@ -343,7 +457,7 @@ export default function PitchPage() {
   }, []);
 
   return (
-    <Box sx={{ minHeight: '100vh', position: 'relative', color: 'text.primary', overflow: 'hidden' }}>
+    <Box sx={{ minHeight: '100vh', position: 'relative', color: 'text.primary', overflowX: 'hidden', zIndex: 0 }}>
       <ShaderBackground />
       <TopAppBar />
 
@@ -355,9 +469,9 @@ export default function PitchPage() {
         zIndex: 0
       }} />
 
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, mt: { xs: 12, md: 16 } }}>
         {/* HERO SECTION */}
-        <Box sx={{ py: { xs: 10, md: 15 }, textAlign: 'center' }}>
+        <Box sx={{ pt: { xs: 4, md: 6 }, pb: { xs: 10, md: 15 }, textAlign: 'center' }}>
           <motion.div 
             initial={hasAnimated ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
@@ -369,20 +483,24 @@ export default function PitchPage() {
               letterSpacing: '-0.04em',
               lineHeight: 1.1,
             }}>
-              {language === 'en' || language === 'de' ? (
-                <>Discord Designer <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-              ) : language === 'fr' ? (
-                <>Designer Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-              ) : language === 'it' ? (
-                <>Designer di Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-              ) : language === 'pt' ? (
-                <>Designer de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-              ) : (
-                <>Diseñador de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-              )}
+              <FadeText>
+                {language === 'en' || language === 'de' ? (
+                  <>Discord Designer <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                ) : language === 'fr' ? (
+                  <>Designer Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                ) : language === 'it' ? (
+                  <>Designer di Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                ) : language === 'pt' ? (
+                  <>Designer de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                ) : (
+                  <>Diseñador de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                )}
+              </FadeText>
             </Typography>
             <Typography variant="h5" sx={{ mb: 6, maxWidth: 800, mx: 'auto', color: 'text.secondary', fontWeight: 400, px: 2, lineHeight: 1.6 }}>
-              {t('pitch.hero.subtitle')}
+              <FadeText>
+                {t('pitch.hero.subtitle')}
+              </FadeText>
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <Button
@@ -393,7 +511,7 @@ export default function PitchPage() {
                 target="_blank"
                 sx={{ borderRadius: '12px', fontWeight: 'bold', textTransform: 'none', px: 5, py: 1.5, fontSize: '1rem' }}
               >
-                {t('pitch.final.button')}
+                <FadeText inline>{t('pitch.final.button')}</FadeText>
               </Button>
             </Box>
           </motion.div>
@@ -511,7 +629,7 @@ export default function PitchPage() {
         <ScrollReveal>
           <Box sx={{ textAlign: 'center', py: 10, mb: 10, borderTop: 1, borderColor: 'divider' }}>
             <Typography variant="overline" sx={{ fontWeight: 'bold', color: 'text.secondary', letterSpacing: 2, display: 'block', mb: 4 }}>
-              {t('pitch.trusted_by')}
+              <FadeText inline>{t('pitch.trusted_by')}</FadeText>
             </Typography>
             <Box sx={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
               <Box
@@ -587,9 +705,11 @@ export default function PitchPage() {
       {/* FOOTER */}
       <Box sx={{ bgcolor: 'background.paper', py: 8, mt: 8, borderTop: 1, borderColor: 'divider' }}>
         <Container maxWidth="sm" sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>{t('cta.title')}</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>
+            <FadeText>{t('cta.title')}</FadeText>
+          </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            {t('cta.subtitle')}
+            <FadeText>{t('cta.subtitle')}</FadeText>
           </Typography>
           <Button 
             variant="contained" 
@@ -599,10 +719,10 @@ export default function PitchPage() {
             startIcon={<EmailIcon />}
             sx={{ borderRadius: 8, px: 4, py: 1.5, fontWeight: 'bold' }}
           >
-            {t('discord.message')}
+            <FadeText inline>{t('discord.message')}</FadeText>
           </Button>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 6 }}>
-            &copy; {new Date().getFullYear()} {t('footer.copy')}
+            <FadeText inline>&copy; {new Date().getFullYear()} {t('footer.copy')}</FadeText>
           </Typography>
         </Container>
       </Box>

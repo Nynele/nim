@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import {
   AppBar,
   Toolbar,
@@ -46,6 +47,22 @@ import {
 
 import { useLanguage } from './language-context';
 import ShaderBackground from './shader-background';
+import KofiModal from './kofi-modal';
+
+function FadeText({ children, inline = false }: { children: React.ReactNode; inline?: boolean }) {
+  const { language } = useLanguage();
+  return (
+    <motion.span
+      key={language}
+      initial={{ opacity: 0.35, filter: 'blur(4px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      style={{ display: inline ? 'inline-block' : 'block' }}
+    >
+      {children}
+    </motion.span>
+  );
+}
 
 // In-memory cache & animation control to prevent reloading animations on language/route change
 let hasAnimated = false;
@@ -384,13 +401,106 @@ function LocalTime() {
 
 // ── Top App Bar ────────────────────────────────────────────────────────
 function TopAppBar() {
+  const { t } = useLanguage();
   return (
-    <AppBar position="sticky" color="transparent" elevation={0} sx={{ backdropFilter: 'blur(12px)', borderBottom: 1, borderColor: 'divider' }} suppressHydrationWarning>
-      <Toolbar sx={{ justifyContent: 'space-between', maxWidth: 'lg', width: '100%', mx: 'auto' }}>
-        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
+    <AppBar
+      position="fixed"
+      color="transparent"
+      elevation={0}
+      sx={{
+        top: { xs: '12px', md: '20px' },
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 'calc(100% - 24px)',
+        maxWidth: '800px',
+        zIndex: 1100,
+        borderRadius: '30px',
+        border: '1px solid',
+        borderColor: 'rgba(255, 255, 255, 0.08)',
+        background: 'rgba(20, 18, 24, 0.65)',
+        backdropFilter: 'blur(20px) saturate(190%)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          boxShadow: '0 12px 40px 0 rgba(0, 0, 0, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15)',
+        },
+        '[data-mui-color-scheme="light"] &': {
+          background: 'rgba(255, 255, 255, 0.65)',
+          borderColor: 'rgba(0, 0, 0, 0.06)',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.5)',
+          '&:hover': {
+            borderColor: 'rgba(0, 0, 0, 0.12)',
+            boxShadow: '0 12px 40px 0 rgba(31, 38, 135, 0.12), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6)',
+          }
+        }
+      }}
+      suppressHydrationWarning
+    >
+      <Toolbar sx={{ justifyContent: 'space-between', width: '100%', px: 3, minHeight: '64px', position: 'relative' }}>
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{ fontWeight: 'bold', cursor: 'pointer' }}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        >
           Nynele
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+
+        {/* Center Navigation Links */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 1, md: 1.5 }
+          }}
+        >
+          <Button
+            component={Link}
+            href="/"
+            sx={{
+              borderRadius: '20px',
+              px: 2,
+              py: 0.5,
+              fontWeight: 'bold',
+              textTransform: 'none',
+              color: 'primary.main',
+              bgcolor: 'action.selected',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: 'action.hover',
+                color: 'primary.main',
+              }
+            }}
+          >
+            {t('nav.home')}
+          </Button>
+          <Button
+            component={Link}
+            href="/showcase"
+            sx={{
+              borderRadius: '20px',
+              px: 2,
+              py: 0.5,
+              fontWeight: 'medium',
+              textTransform: 'none',
+              color: 'text.secondary',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                color: 'text.primary',
+                bgcolor: 'action.hover',
+              }
+            }}
+          >
+            {t('nav.showcase')}
+          </Button>
+        </Box>
+
+        {/* Right side controls */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <LanguageSwitch />
           <ThemeSwitch />
         </Box>
@@ -797,17 +907,18 @@ function DiscordProfile() {
 // ── Page Component ─────────────────────────────────────────────────────
 export default function Personal() {
   const { language, t } = useLanguage();
+  const [isKofiOpen, setIsKofiOpen] = useState(false);
 
   useEffect(() => {
     hasAnimated = true;
   }, []);
 
   return (
-    <Box sx={{ color: 'text.primary', minHeight: '100vh', position: 'relative' }}>
+    <Box sx={{ color: 'text.primary', minHeight: '100vh', position: 'relative', zIndex: 0 }}>
       <ShaderBackground />
       <TopAppBar />
 
-      <Container maxWidth="md" sx={{ mt: { xs: 6, md: 10 } }}>
+      <Container maxWidth="md" sx={{ mt: { xs: 14, md: 18 } }}>
 
         {/* HERO SECTION */}
         <motion.div 
@@ -832,20 +943,24 @@ export default function Personal() {
 
             <Box sx={{ flex: 1 }}>
               <Typography variant="h2" component="h1" sx={{ fontWeight: 900, mb: 2, letterSpacing: '-0.02em', fontSize: { xs: '2.5rem', md: '4rem' }, position: 'relative' }}>
-                {language === 'en' || language === 'de' ? (
-                  <>Discord Designer <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-                ) : language === 'fr' ? (
-                  <>Designer Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-                ) : language === 'it' ? (
-                  <>Designer di Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-                ) : language === 'pt' ? (
-                  <>Designer de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-                ) : (
-                  <>Diseñador de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
-                )}
+                <FadeText>
+                  {language === 'en' || language === 'de' ? (
+                    <>Discord Designer <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                  ) : language === 'fr' ? (
+                    <>Designer Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                  ) : language === 'it' ? (
+                    <>Designer di Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                  ) : language === 'pt' ? (
+                    <>Designer de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                  ) : (
+                    <>Diseñador de Discord <br /><Box component="span" sx={{ color: 'primary.main' }}>&</Box> Community Manager.</>
+                  )}
+                </FadeText>
               </Typography>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 4, fontWeight: 400, maxWidth: 600, lineHeight: 1.6 }}>
-                {t('hero.subtitle')}
+                <FadeText>
+                  {t('hero.subtitle')}
+                </FadeText>
               </Typography>
 
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -855,6 +970,14 @@ export default function Personal() {
                   component="a"
                   href={SOCIAL_LINKS.github}
                   target="_blank"
+                  clickable
+                  variant="outlined"
+                  sx={{ borderRadius: '8px', fontWeight: 'bold' }}
+                />
+                <Chip
+                  icon={<ArrowOutwardIcon />}
+                  label="Ko-fi"
+                  onClick={() => setIsKofiOpen(true)}
                   clickable
                   variant="outlined"
                   sx={{ borderRadius: '8px', fontWeight: 'bold' }}
@@ -871,7 +994,9 @@ export default function Personal() {
 
         {/* PROJECTS SECTION */}
         <ScrollReveal>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>{t('section.projects')}</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
+            <FadeText inline>{t('section.projects')}</FadeText>
+          </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 4, mb: 12 }}>
             {PROJECTS.map((project: any, idx: number) => (
               <ScrollReveal key={project.id} delay={idx * 0.1}>
@@ -911,7 +1036,9 @@ export default function Personal() {
                         <ArrowOutwardIcon sx={{ ml: 'auto', opacity: 0.4, fontSize: 18 }} />
                       </Box>
                       <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                        {getLocalized(project.description, language)}
+                        <FadeText>
+                          {getLocalized(project.description, language)}
+                        </FadeText>
                       </Typography>
                     </CardContent>
                   </CardActionArea>
@@ -923,14 +1050,16 @@ export default function Personal() {
 
         {/* WORK EXPERIENCE */}
         <ScrollReveal>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>{t('section.experience')}</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
+            <FadeText inline>{t('section.experience')}</FadeText>
+          </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4, mb: 12 }}>
             
             {/* Active Roles Column */}
             <Box>
               <Typography variant="h6" color="primary" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1.2 }}>
                 <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
-                {t('experience.active')}
+                <FadeText inline>{t('experience.active')}</FadeText>
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {WORK_EXPERIENCE.filter((job: any) => getLocalized(job.end, language) === t('job.present')).map((job: any, idx: number) => (
@@ -943,7 +1072,9 @@ export default function Personal() {
                           </Avatar>
                           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{getLocalized(job.title, language)}</Typography>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
+                                <FadeText inline>{getLocalized(job.title, language)}</FadeText>
+                              </Typography>
                               {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
                             </Box>
                             <Typography variant="body2" color="text.secondary">{job.company}</Typography>
@@ -961,7 +1092,7 @@ export default function Personal() {
             <Box>
               <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1.2 }}>
                 <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'divider' }} />
-                {t('experience.past')}
+                <FadeText inline>{t('experience.past')}</FadeText>
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {WORK_EXPERIENCE.filter((job: any) => getLocalized(job.end, language) !== t('job.present')).map((job: any, idx: number) => (
@@ -974,7 +1105,9 @@ export default function Personal() {
                           </Avatar>
                           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>{getLocalized(job.title, language)}</Typography>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
+                                <FadeText inline>{getLocalized(job.title, language)}</FadeText>
+                              </Typography>
                               {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
                             </Box>
                             <Typography variant="body2" color="text.secondary">{job.company}</Typography>
@@ -996,9 +1129,11 @@ export default function Personal() {
       {/* FOOTER */}
       <Box sx={{ bgcolor: 'background.paper', py: 8, mt: 8, borderTop: 1, borderColor: 'divider' }}>
         <Container maxWidth="sm" sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>{t('cta.title')}</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>
+            <FadeText>{t('cta.title')}</FadeText>
+          </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            {t('cta.subtitle')}
+            <FadeText>{t('cta.subtitle')}</FadeText>
           </Typography>
           <Button 
             variant="contained" 
@@ -1008,14 +1143,14 @@ export default function Personal() {
             startIcon={<EmailIcon />}
             sx={{ borderRadius: 8, px: 4, py: 1.5, fontWeight: 'bold' }}
           >
-            {t('discord.message')}
+            <FadeText inline>{t('discord.message')}</FadeText>
           </Button>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 6 }}>
-            &copy; {new Date().getFullYear()} {t('footer.copy')}
+            <FadeText inline>&copy; {new Date().getFullYear()} {t('footer.copy')}</FadeText>
           </Typography>
         </Container>
       </Box>
-
+      <KofiModal open={isKofiOpen} onClose={() => setIsKofiOpen(false)} />
     </Box>
   );
 }
