@@ -85,7 +85,7 @@ let cachedDiscordData: any = null;
 let cachedBadges: any[] = [];
 
 // ── Helpers ────────────────────────────────────────────────────────────
-export const getLocalized = (val: LocalizedString, lang: 'en' | 'es' | 'it' | 'fr' | 'de' | 'pt') => {
+const getLocalized = (val: LocalizedString, lang: 'en' | 'es' | 'it' | 'fr' | 'de' | 'pt') => {
   if (typeof val === 'string') return val;
   return val[lang];
 };
@@ -415,7 +415,7 @@ function LocalTime() {
 }
 
 // ── Top App Bar ────────────────────────────────────────────────────────
-export function TopAppBar() {
+function TopAppBar() {
   const { t } = useLanguage();
   return (
     <AppBar
@@ -563,7 +563,7 @@ function ProjectImage({ src, alt }: { src: string; alt: string }) {
 }
 
 // ── Image Carousel / Gallery ────────────────────────────────────────
-export function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
+function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   if (!images || images.length === 0) return null;
@@ -658,7 +658,7 @@ export function ImageCarousel({ images, alt }: { images: string[]; alt: string }
 }
 
 // ── Discord Server Invite Widget ──────────────────────────────────────
-export function DiscordServerInvite({ name, banner, members, online, link, t }: { name: string; banner: string; members: string; online?: string; link: string; t: any }) {
+function DiscordServerInvite({ name, banner, members, online, link, t }: { name: string; banner: string; members: string; online?: string; link: string; t: any }) {
   // Use custom online count if provided, otherwise estimate it (12% of members)
   const onlineCount = online 
     ? online 
@@ -702,7 +702,7 @@ export function DiscordServerInvite({ name, banner, members, online, link, t }: 
 }
 
 // ── Project & Experience Detail Page Component ────────────────────────
-export function ProjectDetailContent({ item, type, language }: {
+function ProjectDetailContent({ item, type, language }: {
   item: any;
   type: 'project' | 'experience';
   language: 'en' | 'es' | 'it' | 'fr' | 'de' | 'pt';

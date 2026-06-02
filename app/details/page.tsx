@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 import { PROJECTS, WORK_EXPERIENCE } from '../data';
 import { useLanguage } from '../language-context';
-import { ProjectDetailContent, TopAppBar } from '../page';
+import { ProjectDetailContent, TopAppBar } from '../shared-components';
 
 const ShaderBackground = dynamic(() => import('../shader-background'), { ssr: false });
 
