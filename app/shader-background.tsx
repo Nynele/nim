@@ -169,13 +169,13 @@ export default function ShaderBackground() {
   const colorsConfig = {
     light: {
       bg: '#FEF7FF',
-      primary: '#6750A4',
-      secondary: '#625B71',
+      primary: '#5F687A',
+      secondary: '#687082',
     },
     dark: {
       bg: '#141218',
-      primary: '#D0BCFF',
-      secondary: '#CCC2DC',
+      primary: '#94A3B8',
+      secondary: '#64748B',
     },
   };
 

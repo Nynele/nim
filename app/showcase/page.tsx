@@ -28,9 +28,11 @@ import {
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../language-context';
 import { SOCIAL_LINKS, PROJECTS, WORK_EXPERIENCE } from '../data';
-import DiscordMessage from '../../components/discord-message';
-import BotBuilder from '../../components/bot-builder';
-import ShaderBackground from '../shader-background';
+import dynamic from 'next/dynamic';
+
+const DiscordMessage = dynamic(() => import('../../components/discord-message'), { ssr: false });
+const BotBuilder = dynamic(() => import('../../components/bot-builder'), { ssr: false });
+const ShaderBackground = dynamic(() => import('../shader-background'), { ssr: false });
 
 function FadeText({ children, inline = false }: { children: React.ReactNode; inline?: boolean }) {
   const { language } = useLanguage();

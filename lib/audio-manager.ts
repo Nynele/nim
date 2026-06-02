@@ -13,6 +13,7 @@ class LofiSynth {
   private delayNode: DelayNode;
   private feedbackNode: GainNode;
   private chordIndex = 0;
+  private volume = 0.8; // Added volume control field
 
   // Chord progression (Dm9 - Am7 - Bbmaj7 - C7)
   private chords = [
@@ -49,12 +50,19 @@ class LofiSynth {
     this.feedbackNode.connect(this.analyser);
   }
 
+  public setVolume(vol: number) {
+    this.volume = vol;
+    if (this.isPlaying) {
+      this.gainNode.gain.setTargetAtTime(0.65 * this.volume, this.ctx.currentTime, 0.1);
+    }
+  }
+
   public start() {
     if (this.isPlaying) return;
     this.isPlaying = true;
 
-    // Fade in main volume
-    this.gainNode.gain.setTargetAtTime(0.65, this.ctx.currentTime, 1.5);
+    // Fade in main volume based on current volume setting
+    this.gainNode.gain.setTargetAtTime(0.65 * this.volume, this.ctx.currentTime, 1.5);
 
     // Start sequence loop
     this.chordIndex = 0;
@@ -325,6 +333,8 @@ export class AudioManager {
   public coverColors: { primary: string; secondary: string } | null = null;
   public youtubeCurrentTime = 0;
   public lastYoutubeTimeUpdate = 0;
+  public volume = 80;
+  private loadedPlaylistQuery: string | null = null;
 
   public labels = {
     syncing:          'Syncing with Discord...',
@@ -359,23 +369,95 @@ export class AudioManager {
     }
   }
 
-  public tracks = [
+  public tracks: {
+    id: string;
+    title: string;
+    artist: string;
+    url: string;
+    youtubeVideoId?: string | null;
+  }[] = [
     {
       id: 'live',
       title: 'Live Discord Music',
       artist: 'Syncing with Discord...',
-      url: ''
+      url: '',
+      youtubeVideoId: null
     }
   ];
   public currentTrackIndex = 0;
-  public isPlaying = true; // Auto-play starts instantly on mount
+  public isPlaying = false; // Starts paused on mount
+  public previousDiscordTrack: { title: string; artist: string; coverUrl: string | null; youtubeVideoId: string | null } | null = null;
+
+  private archiveLiveTrack(newTitle: string) {
+    const oldTitle = this.tracks[0]?.title;
+    if (!oldTitle || oldTitle === newTitle) return;
+
+    const oldArtist = this.tracks[0]?.artist;
+    const oldCoverUrl = this.coverUrl;
+    const oldYoutubeVideoId = this.youtubeVideoId;
+
+    const isOldTitleValid = oldTitle !== 'Live Discord Music' &&
+      oldTitle !== 'Syncing...' &&
+      oldTitle !== 'Syncing with Discord...' &&
+      oldTitle !== this.labels.noMusicTitle &&
+      oldTitle !== this.labels.syncErrorTitle &&
+      oldTitle !== 'Search Failed' &&
+      oldTitle !== 'Connecting to Discord presence...';
+
+    if (isOldTitleValid) {
+      this.previousDiscordTrack = {
+        title: oldTitle,
+        artist: oldArtist || '',
+        coverUrl: oldCoverUrl,
+        youtubeVideoId: oldYoutubeVideoId
+      };
+      this.saveCache();
+      this.notifyListeners();
+    }
+  }
   
   private listeners: (() => void)[] = [];
 
   private constructor() {
     if (typeof window !== 'undefined') {
+      try {
+        const savedVolume = localStorage.getItem('portfolio_audio_volume');
+        if (savedVolume !== null) {
+          const parsed = parseInt(savedVolume, 10);
+          if (!isNaN(parsed)) {
+            this.volume = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load volume setting:", e);
+      }
+
       this.audio = new Audio();
       this.audio.crossOrigin = "anonymous";
+      this.audio.volume = this.volume / 100;
+      
+      // Load cached track info and cover colors immediately to prevent flashes on reload
+      try {
+        const cached = localStorage.getItem('portfolio-music-cache');
+        if (cached) {
+          const cacheData = JSON.parse(cached);
+          if (cacheData) {
+            if (cacheData.title) this.tracks[0].title = cacheData.title;
+            if (cacheData.artist) this.tracks[0].artist = cacheData.artist;
+            if (cacheData.youtubeVideoId) this.youtubeVideoId = cacheData.youtubeVideoId;
+            if (cacheData.coverUrl) this.coverUrl = cacheData.coverUrl;
+            if (cacheData.coverColors) {
+              this.coverColors = cacheData.coverColors;
+              this.updateThemeColors(cacheData.coverColors.primary, cacheData.coverColors.secondary);
+            }
+            if (cacheData.previousDiscordTrack) {
+              this.previousDiscordTrack = cacheData.previousDiscordTrack;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load cached music data:", e);
+      }
       
       this.audio.addEventListener('play', () => {
         this.isPlaying = true;
@@ -463,6 +545,7 @@ export class AudioManager {
       
       // Initialize synth
       this.lofiSynth = new LofiSynth(this.audioContext, this.analyser);
+      this.lofiSynth.setVolume(this.volume / 100);
       
       // Connect standard Audio node
       if (this.audio) {
@@ -487,16 +570,20 @@ export class AudioManager {
       this.audioContext.resume();
     }
     
-    this.isPlaying = true;
-    this.notifyListeners();
-
-    // Play live YouTube player
-    if (this.lofiSynth) this.lofiSynth.stop();
-    if (this.audio) this.audio.pause();
-    
-    // Send postMessage command to play YouTube video inside the iframe
-    const iframe = document.getElementById('yt-player') as HTMLIFrameElement;
-    iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
+    if (this.youtubeVideoId) {
+      this.isPlaying = true;
+      this.notifyListeners();
+      if (this.lofiSynth) this.lofiSynth.stop();
+      if (this.audio) this.audio.pause();
+      
+      // Send postMessage command to play YouTube video inside the iframe
+      const iframe = document.getElementById('yt-player') as HTMLIFrameElement;
+      iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
+      iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [this.volume] }), '*');
+    } else {
+      this.isPlaying = false;
+      this.notifyListeners();
+    }
     
     // Start polling for live updates
     this.startDiscordSyncPolling();
@@ -531,23 +618,72 @@ export class AudioManager {
     }
   }
 
+  public setVolume(vol: number) {
+    this.volume = vol;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('portfolio_audio_volume', String(vol));
+    }
+    if (this.audio) {
+      this.audio.volume = vol / 100;
+    }
+    if (this.lofiSynth) {
+      this.lofiSynth.setVolume(vol / 100);
+    }
+    if (typeof window !== 'undefined') {
+      const iframe = document.getElementById('yt-player') as HTMLIFrameElement;
+      iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [vol] }), '*');
+    }
+    this.notifyListeners();
+  }
+
   public setTrack(index: number) {
+    if (index < 0 || index >= this.tracks.length) return;
     const wasPlaying = this.isPlaying;
     this.pause();
     
-    this.currentTrackIndex = 0;
-    this.youtubeSearchOffset = 0;
+    this.currentTrackIndex = index;
     
-    this.syncDiscordMusic(false);
+    // If it's a playlist track, it has a videoId
+    const track = this.tracks[index];
+    if (track.youtubeVideoId) {
+      this.youtubeVideoId = track.youtubeVideoId;
+    }
+    
+    this.notifyListeners();
+    
     if (wasPlaying) {
-      this.startDiscordSyncPolling();
+      this.play();
     }
   }
 
   public nextTrack() {
-    // Cycle search offset from 0 to 4 to skip to next search results (different versions/videos of the song)
-    this.youtubeSearchOffset = (this.youtubeSearchOffset + 1) % 5;
-    this.syncDiscordMusic(false);
+    if (this.tracks.length > 1) {
+      // Go to next track in playlist
+      this.currentTrackIndex = (this.currentTrackIndex + 1) % this.tracks.length;
+      const track = this.tracks[this.currentTrackIndex];
+      this.youtubeVideoId = track.youtubeVideoId || null;
+      this.notifyListeners();
+      if (this.isPlaying) {
+        setTimeout(() => this.play(), 100);
+      }
+    } else {
+      // Cycle search offset from 0 to 4 to skip to next search results (different versions/videos of the song)
+      this.youtubeSearchOffset = (this.youtubeSearchOffset + 1) % 5;
+      this.syncDiscordMusic(false);
+    }
+  }
+
+  public prevTrack() {
+    if (this.tracks.length > 1) {
+      // Go to previous track in playlist
+      this.currentTrackIndex = (this.currentTrackIndex - 1 + this.tracks.length) % this.tracks.length;
+      const track = this.tracks[this.currentTrackIndex];
+      this.youtubeVideoId = track.youtubeVideoId || null;
+      this.notifyListeners();
+      if (this.isPlaying) {
+        setTimeout(() => this.play(), 100);
+      }
+    }
   }
 
   public resetSearchOffset() {
@@ -560,7 +696,7 @@ export class AudioManager {
     if (this.discordSyncIntervalId) return;
 
     this.discordSyncIntervalId = setInterval(() => {
-      if (this.currentTrackIndex === 0 && this.isPlaying) {
+      if (this.tracks[0]?.id === 'live' && this.isPlaying) {
         this.syncDiscordMusic(true);
       }
     }, 15000); // Check every 15 seconds
@@ -577,7 +713,7 @@ export class AudioManager {
     if (typeof window === 'undefined') return;
 
     const DISCORD_ID = '799251427839049818';
-    if (!silent) {
+    if (!silent && this.loadedPlaylistQuery === null) {
       this.tracks[0].artist = this.labels.connecting;
       this.notifyListeners();
     }
@@ -600,7 +736,17 @@ export class AudioManager {
         // 2. Check Spotify activity
         const spotifyActive = data.listening_to_spotify && data.spotify;
         // 3. Check "Most Listened Album" activity as a fallback
-        const mostListenedActivity = data.activities?.find((a: any) => a.name === 'Most Listened Album');
+        const mostListenedActivity = (ytActivity || spotifyActive)
+          ? null
+          : data.activities?.find((a: any) => a.name === 'Most Listened Album');
+
+        if (mostListenedActivity && mostListenedActivity.details) {
+          const mlQuery = mostListenedActivity.details;
+          if (this.loadedPlaylistQuery === mlQuery) {
+            // Already playing this playlist/album. Keep playing.
+            return;
+          }
+        }
 
         if (ytActivity) {
           songTitle = ytActivity.details || 'YouTube Music Track';
@@ -626,8 +772,41 @@ export class AudioManager {
         }
         
         if (query) {
+          // If "Most Listened Album" is active, search for and load the playlist
+          if (mostListenedActivity && mostListenedActivity.details) {
+            const loaded = await this.searchAndLoadPlaylist(query, artistName);
+            if (loaded) {
+              if (this.tracks[0]) {
+                this.currentBpm = this.guessBpm(this.tracks[0].title, this.tracks[0].artist);
+              }
+              if (this.isPlaying) {
+                const wasLofi = this.youtubeVideoId === null;
+                if (wasLofi && this.lofiSynth) {
+                  this.lofiSynth.stop();
+                }
+                setTimeout(() => this.play(), 100);
+              }
+              return;
+            }
+          }
+
+          // If we had a loaded playlist but now we are playing a single track, clear it
+          if (this.loadedPlaylistQuery !== null) {
+            this.loadedPlaylistQuery = null;
+            this.tracks = [
+              {
+                id: 'live',
+                title: songTitle,
+                artist: 'Syncing with Discord...',
+                url: ''
+              }
+            ];
+            this.currentTrackIndex = 0;
+          }
+
           // If songTitle changed, reset search offset and update BPM!
           if (this.tracks[0].title !== songTitle) {
+            this.archiveLiveTrack(songTitle);
             this.youtubeSearchOffset = 0;
             
             // Set initial guessed BPM immediately
@@ -669,6 +848,7 @@ export class AudioManager {
               if (colors) {
                 this.coverColors = colors;
                 this.updateThemeColors(colors.primary, colors.secondary);
+                this.saveCache();
                 this.notifyListeners();
               }
             });
@@ -680,6 +860,13 @@ export class AudioManager {
           }
 
           this.tracks[0].title = songTitle;
+          
+          const artistLabel = isYTM
+            ? (this.youtubeSearchOffset > 0 ? this.labels.ytmAlt(this.youtubeSearchOffset + 1) : this.labels.ytmSynced)
+            : (spotifyActive
+                ? (this.youtubeSearchOffset > 0 ? this.labels.spotifyAlt(this.youtubeSearchOffset + 1) : this.labels.spotifySynced)
+                : (this.youtubeSearchOffset > 0 ? this.labels.albumAlt(this.youtubeSearchOffset + 1) : this.labels.albumSynced));
+
           if (!silent) {
             this.tracks[0].artist = this.youtubeSearchOffset > 0
               ? this.labels.searchingAlt(this.youtubeSearchOffset + 1)
@@ -709,19 +896,14 @@ export class AudioManager {
             }
           }
 
-          const artistLabel = isYTM
-            ? (this.youtubeSearchOffset > 0 ? this.labels.ytmAlt(this.youtubeSearchOffset + 1) : this.labels.ytmSynced)
-            : (spotifyActive
-                ? (this.youtubeSearchOffset > 0 ? this.labels.spotifyAlt(this.youtubeSearchOffset + 1) : this.labels.spotifySynced)
-                : (this.youtubeSearchOffset > 0 ? this.labels.albumAlt(this.youtubeSearchOffset + 1) : this.labels.albumSynced));
-
           if (extractedVideoId) {
             this.youtubeVideoId = extractedVideoId;
-            this.tracks[0].artist = artistLabel;
-            this.currentArtistLabelKey = isYTM ? 'ytmSynced' : (spotifyActive ? 'spotifySynced' : 'albumSynced');
+            this.tracks[0].artist = artistName || artistLabel;
+            this.currentArtistLabelKey = artistName ? null : (isYTM ? 'ytmSynced' : (spotifyActive ? 'spotifySynced' : 'albumSynced'));
+            this.saveCache();
             this.notifyListeners();
             if (this.isPlaying) {
-              // Trigger reload or play
+              if (this.lofiSynth) this.lofiSynth.stop();
               setTimeout(() => this.play(), 100);
             }
           } else {
@@ -729,20 +911,38 @@ export class AudioManager {
             const videoId = await this.searchYouTubeTrack(query, this.youtubeSearchOffset);
             if (videoId) {
               this.youtubeVideoId = videoId;
-              this.tracks[0].artist = artistLabel;
-              this.currentArtistLabelKey = isYTM ? 'ytmSynced' : (spotifyActive ? 'spotifySynced' : 'albumSynced');
+              this.tracks[0].artist = artistName || artistLabel;
+              this.currentArtistLabelKey = artistName ? null : (isYTM ? 'ytmSynced' : (spotifyActive ? 'spotifySynced' : 'albumSynced'));
+              this.saveCache();
               this.notifyListeners();
               if (this.isPlaying) {
+                if (this.lofiSynth) this.lofiSynth.stop();
                 setTimeout(() => this.play(), 100);
               }
             } else {
+              this.archiveLiveTrack('Search Failed');
               this.tracks[0].title = 'Search Failed';
               this.tracks[0].artist = this.labels.searchFailed;
               this.currentArtistLabelKey = 'searchFailed';
+              this.saveCache();
               this.notifyListeners();
             }
           }
         } else {
+          this.archiveLiveTrack(this.labels.noMusicTitle);
+          // Clear playlist if it was loaded
+          if (this.loadedPlaylistQuery !== null) {
+            this.loadedPlaylistQuery = null;
+            this.tracks = [
+              {
+                id: 'live',
+                title: this.labels.noMusicTitle,
+                artist: this.labels.noMusicArtist,
+                url: ''
+              }
+            ];
+            this.currentTrackIndex = 0;
+          }
           this.tracks[0].title = this.labels.noMusicTitle;
           this.tracks[0].artist = this.labels.noMusicArtist;
           this.currentArtistLabelKey = 'noMusicArtist';
@@ -750,18 +950,81 @@ export class AudioManager {
           this.coverUrl = null;
           this.coverColors = null;
           this.resetThemeColors();
+          this.isPlaying = false;
           this.notifyListeners();
         }
       }
     } catch (err) {
       console.error("Lanyard fetch failed:", err);
       if (!silent) {
+        this.archiveLiveTrack(this.labels.syncErrorTitle);
         this.tracks[0].title = this.labels.syncErrorTitle;
         this.tracks[0].artist = this.labels.syncErrorArtist;
         this.currentArtistLabelKey = 'syncErrorArtist';
         this.notifyListeners();
       }
     }
+  }
+
+  private async searchAndLoadPlaylist(query: string, artistName: string): Promise<boolean> {
+    try {
+      const res = await fetch('https://api.invidious.io/instances.json');
+      const instances = await res.json();
+      
+      const activeInstances = instances
+        .filter((item: any) => item[1].cors && item[1].api && item[1].type === 'https')
+        .map((item: any) => item[1].uri);
+
+      const fallbackInstances = [
+        'https://invidious.projectsegfau.lt',
+        'https://inv.tux.im',
+        'https://invidious.no-logs.com',
+        'https://invidious.lunar.icu'
+      ];
+      
+      const searchList = [...new Set([...fallbackInstances, ...activeInstances])];
+
+      for (const instance of searchList) {
+        try {
+          const searchUrl = `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=playlist`;
+          const response = await fetch(searchUrl, { signal: AbortSignal.timeout(4000) });
+          if (!response.ok) continue;
+          
+          const results = await response.json();
+          if (Array.isArray(results) && results.length > 0) {
+            const playlists = results.filter((item: any) => item.type === 'playlist' && item.playlistId);
+            if (playlists.length > 0) {
+              const playlistId = playlists[0].playlistId;
+              
+              const playlistUrl = `${instance}/api/v1/playlists/${playlistId}`;
+              const playlistRes = await fetch(playlistUrl, { signal: AbortSignal.timeout(4000) });
+              if (!playlistRes.ok) continue;
+              
+              const playlistData = await playlistRes.json();
+              if (playlistData && Array.isArray(playlistData.videos) && playlistData.videos.length > 0) {
+                this.tracks = playlistData.videos.map((v: any, index: number) => ({
+                  id: v.videoId || `track-${index}`,
+                  title: v.title || 'Unknown Title',
+                  artist: v.author || artistName || 'Unknown Artist',
+                  url: '',
+                  youtubeVideoId: v.videoId
+                }));
+                this.loadedPlaylistQuery = query;
+                this.currentTrackIndex = 0;
+                this.youtubeVideoId = this.tracks[0].youtubeVideoId || null;
+                this.notifyListeners();
+                return true;
+              }
+            }
+          }
+        } catch (err) {
+          console.warn(`Playlist search failed on instance ${instance}:`, err);
+        }
+      }
+    } catch (e) {
+      console.error("Playlist loading failed:", e);
+    }
+    return false;
   }
 
   private guessBpm(title: string, artist: string): number {
@@ -1036,6 +1299,30 @@ export class AudioManager {
     root.style.removeProperty('--mui-palette-secondary-contrastText');
     root.style.removeProperty('--mui-palette-secondary-mainChannel');
     root.style.removeProperty('--mui-palette-secondary-contrastTextChannel');
+    this.previousDiscordTrack = null;
+
+    try {
+      localStorage.removeItem('portfolio-music-cache');
+    } catch (e) {
+      console.warn("Failed to remove cached music data:", e);
+    }
+  }
+
+  private saveCache() {
+    if (typeof window === 'undefined') return;
+    try {
+      const cacheData = {
+        title: this.tracks[0].title,
+        artist: this.tracks[0].artist,
+        youtubeVideoId: this.youtubeVideoId,
+        coverUrl: this.coverUrl,
+        coverColors: this.coverColors,
+        previousDiscordTrack: this.previousDiscordTrack
+      };
+      localStorage.setItem('portfolio-music-cache', JSON.stringify(cacheData));
+    } catch (e) {
+      console.warn("Failed to save music cache:", e);
+    }
   }
 
   private async searchYouTubeTrack(query: string, offset = 0): Promise<string | null> {
@@ -1089,7 +1376,7 @@ export class AudioManager {
     }
 
     // If playing YouTube Music via iframe, generate a simulated visualizer beat
-    if (this.currentTrackIndex === 0) {
+    if (this.youtubeVideoId !== null) {
       let time = Date.now() * 0.001;
       if (this.youtubeVideoId && this.lastYoutubeTimeUpdate > 0) {
         const elapsed = (Date.now() - this.lastYoutubeTimeUpdate) * 0.001;

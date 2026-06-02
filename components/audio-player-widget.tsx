@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Box, IconButton, Typography, Tooltip, Menu, MenuItem } from '@mui/material';
+import { Box, IconButton, Typography, Tooltip, Menu, MenuItem, Slider } from '@mui/material';
 import {
   PlayArrow as PlayIcon,
   Pause as PauseIcon,
   SkipNext as NextIcon,
+  SkipPrevious as PrevIcon,
   MusicNote as MusicIcon,
   VolumeUp as VolumeIcon,
+  VolumeOff as VolumeOffIcon,
   GraphicEq as EquallizerIcon
 } from '@mui/icons-material';
 import { AudioManager } from '../lib/audio-manager';
@@ -21,6 +23,15 @@ export default function AudioPlayerWidget() {
   const [artistText, setArtistText] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [volume, setVolumeState] = useState(80);
+  const [prevVolume, setPrevVolume] = useState(80);
+  const [coverError, setCoverError] = useState(false);
+  const [hasPlayed, setHasPlayed] = useState(false);
+  const [prevDiscordTrack, setPrevDiscordTrack] = useState<{ title: string; artist: string; coverUrl: string | null; youtubeVideoId: string | null } | null>(null);
+
+  useEffect(() => {
+    setCoverError(false);
+  }, [currentTrackIndex, youtubeVideoId]);
 
   useEffect(() => {
     setMounted(true);
@@ -32,6 +43,8 @@ export default function AudioPlayerWidget() {
       setCurrentTrackIndex(manager.currentTrackIndex);
       setYoutubeVideoId(manager.youtubeVideoId);
       setArtistText(manager.tracks[manager.currentTrackIndex]?.artist ?? '');
+      setVolumeState(manager.volume);
+      setPrevDiscordTrack(manager.previousDiscordTrack);
     });
 
     // Sync initial state
@@ -39,6 +52,8 @@ export default function AudioPlayerWidget() {
     setCurrentTrackIndex(manager.currentTrackIndex);
     setYoutubeVideoId(manager.youtubeVideoId);
     setArtistText(manager.tracks[manager.currentTrackIndex]?.artist ?? '');
+    setVolumeState(manager.volume);
+    setPrevDiscordTrack(manager.previousDiscordTrack);
 
     // Sync Discord presence on mount if live track is selected
     if (manager.currentTrackIndex === 0) {
@@ -47,6 +62,12 @@ export default function AudioPlayerWidget() {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (isPlaying) {
+      setHasPlayed(true);
+    }
+  }, [isPlaying]);
 
   // Sync translated labels into AudioManager whenever language changes
   useEffect(() => {
@@ -85,6 +106,11 @@ export default function AudioPlayerWidget() {
     manager.nextTrack();
   };
 
+  const handlePrevTrack = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    manager.prevTrack();
+  };
+
   const handleOpenMenu = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
     setAnchorEl(e.currentTarget);
@@ -99,126 +125,483 @@ export default function AudioPlayerWidget() {
     handleCloseMenu();
   };
 
+  const handleVolumeChange = (e: Event, newValue: number | number[]) => {
+    const vol = newValue as number;
+    setVolumeState(vol);
+    manager.setVolume(vol);
+  };
+
+  const handleToggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (volume > 0) {
+      setPrevVolume(volume);
+      setVolumeState(0);
+      manager.setVolume(0);
+    } else {
+      const targetVol = prevVolume > 0 ? prevVolume : 80;
+      setVolumeState(targetVol);
+      manager.setVolume(targetVol);
+    }
+  };
+
+  const formatTrackProgress = (current: number, total: number) => {
+    return t('audio.track_progress')
+      .replace('{current}', String(current))
+      .replace('{total}', String(total));
+  };
+
+  const getTrackCover = (track: any, idx: number) => {
+    if (idx === 0 && manager.currentTrackIndex === 0) {
+      return manager.coverUrl || null;
+    }
+    if (track?.coverUrl) return track.coverUrl;
+    if (track?.youtubeVideoId) {
+      return `https://img.youtube.com/vi/${track.youtubeVideoId}/hqdefault.jpg`;
+    }
+    return null;
+  };
+
   const currentTrack = manager.tracks[currentTrackIndex];
+  const nextTrackIndex = (currentTrackIndex + 1) % manager.tracks.length;
+  const nextTrack = manager.tracks.length > 1 ? manager.tracks[nextTrackIndex] : null;
+
+  const isLiveTrack = currentTrack?.id === 'live';
+  const showPreviousTrack = isLiveTrack && prevDiscordTrack !== null;
+  const showNextTrack = !isLiveTrack && nextTrack !== null;
+  const showTopPanel = showPreviousTrack || showNextTrack;
 
   return (
     <Box
       suppressHydrationWarning
       sx={{
         position: 'fixed',
-        bottom: 24,
-        right: 24,
+        bottom: 16,
+        right: 16,
         zIndex: 1000,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        gap: 1.5,
-        px: 2,
-        py: 1,
-        borderRadius: '30px',
-        bgcolor: 'rgba(var(--mui-palette-background-paperChannel) / 0.7)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        border: 1,
-        borderColor: 'divider',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
-        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        gap: 0.75,
+        pointerEvents: 'none',
+        transition: 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
         '&:hover': {
-          borderColor: 'primary.main',
-          boxShadow: '0 12px 40px rgba(var(--mui-palette-primary-mainChannel) / 0.2)',
           transform: 'translateY(-2px)'
+        },
+        '&:hover .player-card': {
+          borderColor: 'primary.main',
         }
       }}
     >
-      {/* Equalizer / Music Icon */}
-      <Tooltip title={t('audio.select_track')} arrow>
-        <IconButton 
-          onClick={handleOpenMenu}
-          size="small"
-          sx={{ 
-            color: isPlaying ? 'primary.main' : 'text.secondary',
+      {/* Unified Attached Top Panel */}
+      {showTopPanel && (
+        <Box
+          className="player-card"
+          sx={{
+            alignSelf: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.5,
+            py: 0.6,
+            borderRadius: '16px',
+            bgcolor: 'rgba(var(--mui-palette-background-paperChannel) / 0.75)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            border: 1,
+            borderColor: 'divider',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+            pointerEvents: isPlaying ? 'auto' : 'none',
+            zIndex: 1,
             position: 'relative',
-            '&::after': isPlaying ? {
-              content: '""',
-              position: 'absolute',
-              width: '100%',
-              height: '100%',
-              borderRadius: '50%',
-              border: '2px solid var(--mui-palette-primary-main)',
-              animation: 'ripple 1.5s infinite ease-in-out',
-              '@keyframes ripple': {
-                '0%': { transform: 'scale(0.8)', opacity: 1 },
-                '100%': { transform: 'scale(1.5)', opacity: 0 }
-              }
-            } : {}
+            transform: isPlaying ? 'translateY(0)' : 'translateY(calc(100% + 6px))',
+            opacity: isPlaying ? 1 : 0,
+            transition: 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease'
           }}
         >
-          {isPlaying ? (
-            <EquallizerIcon 
-              sx={{ 
-                fontSize: 20,
-                animation: 'pulse 1.2s infinite ease-in-out',
-                '@keyframes pulse': {
-                  '0%, 100%': { transform: 'scale(1)' },
-                  '50%': { transform: 'scale(1.15)' }
-                }
-              }} 
-            />
-          ) : (
-            <MusicIcon sx={{ fontSize: 20 }} />
+          {showNextTrack && nextTrack && (
+            <>
+              <Box 
+                component="img"
+                src={getTrackCover(nextTrack, nextTrackIndex) || undefined}
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '6px',
+                  objectFit: 'cover',
+                  bgcolor: 'action.selected',
+                  border: 1,
+                  borderColor: 'divider'
+                }}
+                onError={(e: any) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+              <Box sx={{ display: 'flex', flexDirection: 'column', maxWidth: 160 }}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    fontWeight: 800, 
+                    fontSize: '0.6rem', 
+                    color: 'primary.main', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: 0.8,
+                    lineHeight: 1
+                  }}
+                >
+                  {language === 'es' ? 'Siguiente pista' : 'Next Track'}
+                </Typography>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    fontWeight: 700, 
+                    fontSize: '0.68rem', 
+                    color: 'text.primary',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    mt: 0.1
+                  }}
+                >
+                  {nextTrack.title}
+                </Typography>
+              </Box>
+            </>
           )}
-        </IconButton>
-      </Tooltip>
 
-      {/* Track Info */}
-      <Box sx={{ maxWidth: { xs: 120, sm: 180 }, minWidth: 60, display: 'flex', flexDirection: 'column' }}>
-        <Typography 
-          variant="caption" 
-          sx={{ 
-            fontWeight: 800, 
-            fontSize: '0.7rem', 
-            color: 'primary.main', 
-            letterSpacing: 0.5, 
-            textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}
-        >
-          {currentTrack.id === 'live' ? artistText : (isPlaying ? t('audio.playing_lofi') : t('audio.lofi_background'))}
-        </Typography>
-        <Typography 
-          variant="caption" 
-          sx={{ 
-            fontWeight: 700, 
-            color: 'text.primary', 
-            fontSize: '0.75rem',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            mt: -0.3
-          }}
-        >
-          {currentTrack.title}
-        </Typography>
-      </Box>
+          {showPreviousTrack && prevDiscordTrack && (
+            <>
+              <Box 
+                component="img"
+                src={prevDiscordTrack.coverUrl || undefined}
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '6px',
+                  objectFit: 'cover',
+                  bgcolor: 'action.selected',
+                  border: 1,
+                  borderColor: 'divider'
+                }}
+                onError={(e: any) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+              <Box sx={{ display: 'flex', flexDirection: 'column', maxWidth: 160 }}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    fontWeight: 800, 
+                    fontSize: '0.55rem', 
+                    color: 'primary.main', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: 0.8,
+                    lineHeight: 1
+                  }}
+                >
+                  {t('audio.previously_played')}
+                </Typography>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    fontWeight: 700, 
+                    fontSize: '0.68rem', 
+                    color: 'text.primary',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    mt: 0.1,
+                    lineHeight: 1.1
+                  }}
+                >
+                  {prevDiscordTrack.title}
+                </Typography>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    fontWeight: 500, 
+                    fontSize: '0.6rem', 
+                    color: 'text.secondary',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    lineHeight: 1
+                  }}
+                >
+                  {prevDiscordTrack.artist}
+                </Typography>
+              </Box>
+            </>
+          )}
+        </Box>
+      )}
 
-      {/* Controls */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, borderLeft: 1, borderColor: 'divider', pl: 1 }}>
-        <Tooltip title={isPlaying ? t('audio.pause') : `${t('audio.play')} - ${currentTrack.title}`} arrow>
+      {/* Main Player Widget */}
+      <Box
+        className="player-card"
+        suppressHydrationWarning
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          px: 1.5,
+          py: 0.75,
+          borderRadius: '30px',
+          bgcolor: 'rgba(var(--mui-palette-background-paperChannel) / 0.7)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          border: 1,
+          borderColor: 'divider',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+          transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+          pointerEvents: 'auto',
+          zIndex: 2,
+          position: 'relative'
+        }}
+      >
+        {/* Equalizer / Album Cover */}
+        <Tooltip title={t('audio.select_track')} arrow>
           <IconButton 
-            onClick={handleTogglePlay} 
-            size="small" 
+            onClick={handleOpenMenu}
+            size="small"
             sx={{ 
-              color: 'text.primary',
-              bgcolor: isPlaying ? 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)' : 'transparent',
-              '&:hover': {
-                bgcolor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.2)',
-                color: 'primary.main'
+              p: 0,
+              width: 30,
+              height: 30,
+              borderRadius: '8px',
+              overflow: 'hidden',
+              position: 'relative',
+              bgcolor: 'action.selected',
+              color: isPlaying ? 'primary.main' : 'text.secondary',
+              '&::after': isPlaying ? {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                borderRadius: isPlaying && getTrackCover(currentTrack, currentTrackIndex) && !coverError ? '50%' : '8px',
+                border: '2px solid var(--mui-palette-primary-main)',
+                animation: 'ripple 1.5s infinite ease-in-out',
+                '@keyframes ripple': {
+                  '0%': { transform: 'scale(0.8)', opacity: 1 },
+                  '100%': { transform: 'scale(1.3)', opacity: 0 }
+                }
+              } : {}
+            }}
+          >
+            {getTrackCover(currentTrack, currentTrackIndex) && !coverError ? (
+              <Box 
+                component="img"
+                src={getTrackCover(currentTrack, currentTrackIndex) || undefined}
+                onError={() => setCoverError(true)}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: isPlaying ? '50%' : '8px',
+                  transition: 'all 0.5s ease',
+                  animation: isPlaying ? 'spin 12s linear infinite' : 'none',
+                  '@keyframes spin': {
+                    '0%': { transform: 'rotate(0deg)' },
+                    '100%': { transform: 'rotate(360deg)' }
+                  }
+                }}
+              />
+            ) : (
+              isPlaying ? (
+                <EquallizerIcon 
+                  sx={{ 
+                    fontSize: 20,
+                    animation: 'pulse 1.2s infinite ease-in-out',
+                    '@keyframes pulse': {
+                      '0%, 100%': { transform: 'scale(1)' },
+                      '50%': { transform: 'scale(1.15)' }
+                    }
+                  }} 
+                />
+              ) : (
+                <MusicIcon sx={{ fontSize: 20 }} />
+              )
+            )}
+          </IconButton>
+        </Tooltip>
+
+        {/* Track Info */}
+        <Box sx={{ maxWidth: { xs: 120, sm: 180 }, minWidth: 60, display: 'flex', flexDirection: 'column' }}>
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              fontWeight: 800, 
+              fontSize: '0.65rem', 
+              color: 'primary.main', 
+              letterSpacing: 0.3, 
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {youtubeVideoId 
+              ? (currentTrack.id === 'live' ? artistText : currentTrack.artist)
+              : (isPlaying ? t('audio.lofi_background') : t('audio.status.no_music_artist'))
+            }
+          </Typography>
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              fontWeight: 700, 
+              color: 'text.primary', 
+              fontSize: '0.7rem',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              mt: -0.2
+            }}
+          >
+            {youtubeVideoId 
+              ? currentTrack.title 
+              : (isPlaying ? t('audio.playing_lofi') : t('audio.status.no_music_title'))
+            }
+          </Typography>
+          {manager.tracks.length > 1 && (
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                fontWeight: 600, 
+                color: 'text.secondary', 
+                fontSize: '0.6rem',
+                mt: 0.1
+              }}
+            >
+              {formatTrackProgress(currentTrackIndex + 1, manager.tracks.length)}
+            </Typography>
+          )}
+        </Box>
+
+        {/* Controls */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, borderLeft: 1, borderColor: 'divider', pl: 1 }}>
+          {/* Previous Button */}
+          {manager.tracks.length > 1 && (
+            <Tooltip title={language === 'es' ? 'Pista anterior' : 'Previous track'} arrow>
+              <IconButton 
+                onClick={handlePrevTrack} 
+                size="small" 
+                sx={{ 
+                  p: 0.4,
+                  color: 'text.primary',
+                  '&:hover': {
+                    bgcolor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.2)',
+                    color: 'primary.main'
+                  }
+                }}
+              >
+                <PrevIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          <Tooltip title={isPlaying ? t('audio.pause') : `${t('audio.play')} - ${currentTrack.title}`} arrow>
+            <IconButton 
+              onClick={handleTogglePlay} 
+              size="small" 
+              sx={{ 
+                p: 0.4,
+                color: 'text.primary',
+                bgcolor: isPlaying ? 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)' : 'transparent',
+                '&:hover': {
+                  bgcolor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.2)',
+                  color: 'primary.main'
+                }
+              }}
+            >
+              {isPlaying ? <PauseIcon sx={{ fontSize: 18 }} /> : <PlayIcon sx={{ fontSize: 18 }} />}
+            </IconButton>
+          </Tooltip>
+
+          {manager.tracks.length > 1 && (
+            <Tooltip title={language === 'es' ? 'Siguiente pista' : 'Next track'} arrow>
+              <IconButton 
+                onClick={handleNextTrack} 
+                size="small" 
+                sx={{ 
+                  p: 0.4,
+                  color: 'text.primary',
+                  '&:hover': {
+                    bgcolor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.2)',
+                    color: 'primary.main'
+                  }
+                }}
+              >
+                <NextIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {/* Volume Control */}
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              ml: 0.5, 
+              gap: 0.5,
+              '&:hover .volume-slider-container': {
+                width: '50px',
+                opacity: 1,
+                ml: 0.5
               }
             }}
           >
-            {isPlaying ? <PauseIcon sx={{ fontSize: 18 }} /> : <PlayIcon sx={{ fontSize: 18 }} />}
-          </IconButton>
-        </Tooltip>
+            <Tooltip title={volume === 0 ? (language === 'es' ? 'Activar sonido' : 'Unmute') : (language === 'es' ? 'Silenciar' : 'Mute')} arrow>
+              <IconButton
+                size="small"
+                onClick={handleToggleMute}
+                sx={{ p: 0.4, color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+              >
+                {volume === 0 ? <VolumeOffIcon sx={{ fontSize: 18 }} /> : <VolumeIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+            </Tooltip>
+            <Box
+              className="volume-slider-container"
+              sx={{
+                width: '0px',
+                opacity: 0,
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'width 0.3s ease, opacity 0.2s ease, margin 0.3s ease'
+              }}
+            >
+              <Slider
+                size="small"
+                value={volume}
+                onChange={handleVolumeChange}
+                aria-label="Volume"
+                min={0}
+                max={100}
+                sx={{
+                  width: 50,
+                  color: 'primary.main',
+                  '& .MuiSlider-thumb': {
+                    width: 8,
+                    height: 8,
+                    transition: '0.3s cubic-bezier(.47,1.64,.41,.8)',
+                    '&:before': {
+                      boxShadow: '0 2px 12px 0 rgba(0,0,0,0.4)',
+                    },
+                    '&:hover, &.Mui-focusVisible': {
+                      boxShadow: `0px 0px 0px 8px rgba(var(--mui-palette-primary-mainChannel) / 0.16)`,
+                    },
+                    '&.Mui-active': {
+                      width: 12,
+                      height: 12,
+                    },
+                  },
+                  '& .MuiSlider-rail': {
+                    opacity: 0.28,
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+        </Box>
       </Box>
 
       {/* Track Selection Menu */}
@@ -235,7 +618,7 @@ export default function AudioPlayerWidget() {
             sx: {
               borderRadius: '20px',
               mb: 1.5,
-              minWidth: 220,
+              minWidth: 240,
               p: 1,
               overflow: 'visible',
               filter: 'drop-shadow(0px 8px 24px rgba(0,0,0,0.15))',
@@ -288,6 +671,7 @@ export default function AudioPlayerWidget() {
           }}
           sx={{
             borderRadius: '12px',
+            mb: 0,
             py: 1,
             px: 2,
             transition: 'all 0.2s ease',
@@ -309,7 +693,7 @@ export default function AudioPlayerWidget() {
       </Menu>
 
       {/* Hidden YouTube Player Iframe */}
-      {currentTrack.id === 'live' && youtubeVideoId && (
+      {youtubeVideoId && hasPlayed && (
         <iframe
           id="yt-player"
           key={youtubeVideoId}
@@ -320,6 +704,10 @@ export default function AudioPlayerWidget() {
           frameBorder="0"
           allow="autoplay"
           style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+          onLoad={() => {
+            const iframe = document.getElementById('yt-player') as HTMLIFrameElement;
+            iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [volume] }), '*');
+          }}
         />
       )}
     </Box>

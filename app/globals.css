@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is([data-mui-color-scheme="dark"] *, .dark *));
 
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,

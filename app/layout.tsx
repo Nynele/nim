@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import MuiThemeProvider from './theme-provider'
 import { LanguageProvider } from './language-context'
-import AudioPlayerWidget from '../components/audio-player-widget'
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript'
 import { Roboto } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
@@ -128,7 +127,6 @@ export default function RootLayout({
         />
         <LanguageProvider>
           <MuiThemeProvider>
-            <AudioPlayerWidget />
             <div className="flex min-h-screen w-full flex-col">
               {children}
             </div>

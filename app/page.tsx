@@ -10,7 +10,6 @@ import {
   Button,
   Chip,
   Card,
-  CardActionArea,
   CardContent,
   Avatar,
   Box,
@@ -35,10 +34,13 @@ import {
   Smartphone as SmartphoneIcon,
   Language as WebIcon,
   Translate as TranslateIcon,
+  Groups as GroupsIcon,
+  SportsEsports as GameIcon,
 } from '@mui/icons-material';
 
 import {
   PROJECTS,
+  REPOSITORIES,
   WORK_EXPERIENCE,
   EMAIL,
   SOCIAL_LINKS,
@@ -46,8 +48,21 @@ import {
 } from './data';
 
 import { useLanguage } from './language-context';
-import ShaderBackground from './shader-background';
-import KofiModal from './kofi-modal';
+import dynamic from 'next/dynamic';
+
+import {
+  MorphingDialog,
+  MorphingDialogTrigger,
+  MorphingDialogContainer,
+  MorphingDialogContent,
+  MorphingDialogClose,
+  MorphingDialogTitle,
+  MorphingDialogSubtitle,
+  MorphingDialogDescription,
+} from '@/components/ui/morphing-dialog';
+
+const ShaderBackground = dynamic(() => import('./shader-background'), { ssr: false });
+const KofiModal = dynamic(() => import('./kofi-modal'), { ssr: false });
 
 function FadeText({ children, inline = false }: { children: React.ReactNode; inline?: boolean }) {
   const { language } = useLanguage();
@@ -70,7 +85,7 @@ let cachedDiscordData: any = null;
 let cachedBadges: any[] = [];
 
 // ── Helpers ────────────────────────────────────────────────────────────
-const getLocalized = (val: LocalizedString, lang: 'en' | 'es' | 'it' | 'fr' | 'de' | 'pt') => {
+export const getLocalized = (val: LocalizedString, lang: 'en' | 'es' | 'it' | 'fr' | 'de' | 'pt') => {
   if (typeof val === 'string') return val;
   return val[lang];
 };
@@ -400,7 +415,7 @@ function LocalTime() {
 }
 
 // ── Top App Bar ────────────────────────────────────────────────────────
-function TopAppBar() {
+export function TopAppBar() {
   const { t } = useLanguage();
   return (
     <AppBar
@@ -442,7 +457,15 @@ function TopAppBar() {
           variant="h6"
           component="div"
           sx={{ fontWeight: 'bold', cursor: 'pointer' }}
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              if (window.location.pathname === '/') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                window.location.href = '/';
+              }
+            }
+          }}
         >
           Nynele
         </Typography>
@@ -536,6 +559,485 @@ function ProjectImage({ src, alt }: { src: string; alt: string }) {
         transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
       }}
     />
+  );
+}
+
+// ── Image Carousel / Gallery ────────────────────────────────────────
+export function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  if (!images || images.length === 0) return null;
+
+  return (
+    <Box sx={{ width: '100%', mb: 3 }}>
+      {/* Main Image View */}
+      <Box sx={{
+        borderRadius: '16px',
+        overflow: 'hidden',
+        aspectRatio: '16/9',
+        mb: 1.5,
+        position: 'relative',
+        border: 1,
+        borderColor: 'divider',
+        bgcolor: 'action.hover',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+      }}>
+        <ProjectImage src={images[activeIndex]} alt={`${alt} - screenshot ${activeIndex + 1}`} />
+        
+        {/* Navigation Dots Overlay */}
+        {images.length > 1 && (
+          <Box sx={{
+            position: 'absolute',
+            bottom: 12,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: 1,
+            bgcolor: 'rgba(0,0,0,0.6)',
+            px: 1.5,
+            py: 0.8,
+            borderRadius: '12px',
+            backdropFilter: 'blur(8px)',
+            zIndex: 5
+          }}>
+            {images.map((_, idx) => (
+              <Box
+                key={idx}
+                onClick={() => setActiveIndex(idx)}
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: activeIndex === idx ? 'primary.main' : 'rgba(255,255,255,0.4)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: 'primary.light', transform: 'scale(1.2)' }
+                }}
+              />
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {/* Thumbnails Row */}
+      {images.length > 1 && (
+        <Box sx={{
+          display: 'flex',
+          gap: 1,
+          overflowX: 'auto',
+          pb: 0.5,
+          '::-webkit-scrollbar': { height: '6px' },
+          '::-webkit-scrollbar-thumb': { bgcolor: 'rgba(0,0,0,0.15)', borderRadius: '3px' },
+          '::-webkit-scrollbar-track': { bgcolor: 'transparent' }
+        }}>
+          {images.map((img, idx) => (
+            <Box
+              key={idx}
+              onClick={() => setActiveIndex(idx)}
+              sx={{
+                width: 80,
+                height: 48,
+                borderRadius: '8px',
+                overflow: 'hidden',
+                flexShrink: 0,
+                cursor: 'pointer',
+                border: '2px solid',
+                borderColor: activeIndex === idx ? 'primary.main' : 'transparent',
+                transition: 'all 0.2s',
+                opacity: activeIndex === idx ? 1 : 0.6,
+                '&:hover': { opacity: 1, borderColor: activeIndex === idx ? 'primary.main' : 'divider' }
+              }}
+            >
+              <Box component="img" src={img} alt={`${alt} thumbnail ${idx + 1}`} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+// ── Discord Server Invite Widget ──────────────────────────────────────
+export function DiscordServerInvite({ name, banner, members, online, link, t }: { name: string; banner: string; members: string; online?: string; link: string; t: any }) {
+  // Use custom online count if provided, otherwise estimate it (12% of members)
+  const onlineCount = online 
+    ? online 
+    : (() => {
+        const memberNum = parseInt(members.replace(/[^0-9]/g, '')) || 10000;
+        const count = Math.floor(memberNum * 0.12);
+        return count.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + '+';
+      })();
+
+  return (
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2.5,
+      p: 2,
+      borderRadius: '16px',
+      border: 1,
+      borderColor: 'divider',
+      bgcolor: 'rgba(255, 255, 255, 0.02)',
+      '[data-mui-color-scheme="light"] &': {
+        bgcolor: 'rgba(0, 0, 0, 0.03)',
+      },
+      boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+      mb: 3,
+      flexWrap: 'wrap'
+    }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#43b581' }} />
+        <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.72rem', color: 'text.secondary' }}>
+          {onlineCount} Online
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#747f8d' }} />
+        <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.72rem', color: 'text.secondary' }}>
+          {members} Members
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+// ── Project & Experience Detail Page Component ────────────────────────
+export function ProjectDetailContent({ item, type, language }: {
+  item: any;
+  type: 'project' | 'experience';
+  language: 'en' | 'es' | 'it' | 'fr' | 'de' | 'pt';
+}) {
+  const { t } = useLanguage();
+  
+  // Resolve item details
+  const name = type === 'project' ? item.name : item.company;
+  const link = item.link || '#';
+  const isDiscord = 
+    item.type === 'discord' || 
+    (link && (link.includes('discord.gg') || link.includes('discord.com') || link.includes('discord'))) || 
+    !!item.serverId ||
+    name.toLowerCase().includes('enginefall') ||
+    name.toLowerCase().includes('rules of engagement') ||
+    name.toLowerCase().includes('dawnlands');
+
+  const subtitle = type === 'project' 
+    ? (isDiscord ? t('project.filter.discord') : t('project.filter.dev')) 
+    : getLocalized(item.title, language);
+  const description = getLocalized(item.description, language);
+  const gameInfo = item.gameInfo ? getLocalized(item.gameInfo, language) : null;
+  const members = item.members || null;
+  const online = item.online || null;
+  const images = item.images || [];
+  const skills = item.skills || [];
+  const verified = item.verified || false;
+
+  // Steam details helper
+  const getSteamDetails = (nameStr: string) => {
+    const n = nameStr.toLowerCase();
+    if (n.includes('enginefall')) {
+      return {
+        appId: '2437390',
+        reviews: 'Upcoming (2026)',
+        critic: 'TBD',
+        developer: 'Red Rover Interactive',
+        publisher: 'Red Rover Interactive'
+      };
+    }
+    if (n.includes('rules') || n.includes('grey state')) {
+      return {
+        appId: '3978820',
+        reviews: 'Upcoming (2026)',
+        critic: 'TBD',
+        developer: 'Grey State Studio',
+        publisher: 'Tencent Games'
+      };
+    }
+    if (n.includes('dawnlands')) {
+      return {
+        appId: '2197910',
+        reviews: 'Mixed (1,631 reviews)',
+        critic: 'N/A',
+        developer: 'Seasun Games Pte. Ltd.',
+        publisher: 'Seasun Games Pte. Ltd.'
+      };
+    }
+    return null;
+  };
+
+  const steam = getSteamDetails(name);
+
+  return (
+    <Box sx={{ position: 'relative' }}>
+      {/* Header Area */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, mb: 4.5, pr: 5 }}>
+        {/* Sleek App Icon / Game avatar */}
+        <Avatar
+          variant="rounded"
+          src={item.logo}
+          sx={{
+            width: 64,
+            height: 64,
+            borderRadius: '16px',
+            bgcolor: item.logo ? 'transparent' : 'primary.main',
+            color: 'primary.contrastText',
+            fontWeight: 900,
+            fontSize: '1.6rem',
+            border: item.logo ? 'none' : '1px solid',
+            borderColor: 'divider',
+            background: item.logo ? 'none' : `linear-gradient(135deg, var(--mui-palette-primary-main) 0%, #1c1921 100%)`,
+            boxShadow: item.logo ? '0 4px 16px rgba(0, 0, 0, 0.15)' : 'none'
+          }}
+        >
+          {!item.logo && name.charAt(0)}
+        </Avatar>
+
+        <Box sx={{ minWidth: 0 }}>
+          {/* Top Rank Badge / Tag */}
+          {steam && (
+            <Chip
+              label={name.toLowerCase().includes('engine') ? '⭐ TOP MULTIPLAYER' : '🔥 MOST ANTICIPATED'}
+              size="small"
+              sx={{
+                height: 18,
+                fontSize: '0.62rem',
+                fontWeight: 'bold',
+                borderRadius: '4px',
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                mb: 0.8,
+                letterSpacing: 0.5
+              }}
+            />
+          )}
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography variant="h5" sx={{ fontWeight: 'black', color: 'text.primary' }}>
+              {name}
+            </Typography>
+            {verified && <VerifiedIcon sx={{ color: '#23a55a', fontSize: 20 }} />}
+          </Box>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5, mt: 0.5, display: 'block', color: 'primary.main' }}>
+            {subtitle}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Two Column Grid */}
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: '1.85fr 1.15fr' },
+        gap: 4
+      }}>
+        {/* Left Column (Screenshots & Descriptions) */}
+        <Box sx={{ minWidth: 0 }}>
+          {/* Screenshot Carousel */}
+          {images.length > 0 ? (
+            <ImageCarousel images={images} alt={name} />
+          ) : (
+            <Box sx={{
+              width: '100%',
+              aspectRatio: '16/9',
+              borderRadius: '16px',
+              mb: 3,
+              background: `linear-gradient(135deg, ${item.languageColor || 'var(--mui-palette-primary-main)'} 0%, #1c1921 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 1.5,
+              p: 3,
+              position: 'relative',
+              overflow: 'hidden',
+              border: 1,
+              borderColor: 'divider'
+            }}>
+              <ComputerIcon sx={{ fontSize: 64, color: 'rgba(255,255,255,0.2)' }} />
+              <Typography variant="h5" sx={{ color: 'white', fontWeight: 900, textAlign: 'center' }}>{name}</Typography>
+              {item.language && (
+                <Chip label={item.language} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 'bold' }} />
+              )}
+            </Box>
+          )}
+
+          {/* Description Section */}
+          <Box sx={{ mt: 3 }}>
+            <Typography sx={{ color: 'text.primary', fontSize: '0.88rem', lineHeight: 1.6, mb: 4 }}>
+              {description}
+            </Typography>
+          </Box>
+ 
+          {/* Game Overview Info */}
+          {gameInfo && (
+            <Box sx={{ mt: 4, p: 2.5, borderRadius: '16px', bgcolor: 'action.hover', border: '1px dashed', borderColor: 'divider' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <GameIcon color="primary" sx={{ fontSize: 22 }} />
+                <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'text.primary', fontSize: '0.78rem', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  {t('dialog.game_overview')}
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="text.primary" sx={{ lineHeight: 1.6, fontSize: '0.88rem' }}>
+                {gameInfo}
+              </Typography>
+            </Box>
+          )}
+ 
+          {/* Applied Skills */}
+          {skills.length > 0 && (
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, color: 'text.primary', fontSize: '0.72rem', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                {t('dialog.applied_skills')}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {skills.map((skill: string) => (
+                  <Chip key={skill} label={skill} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.65rem' }} />
+                ))}
+              </Box>
+            </Box>
+          )}
+        </Box>
+ 
+        {/* Right Column (Outbound Buttons, Invite widget, Meta info) */}
+        <Box>
+          {/* Action Links */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
+            {/* Primary Action Button (Visit Web / Server) */}
+            <Button
+              fullWidth
+              variant="contained"
+              href={link}
+              target="_blank"
+              endIcon={<ArrowOutwardIcon />}
+              sx={{
+                py: 1.5,
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                textTransform: 'none',
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                boxShadow: '0 4px 14px rgba(var(--mui-palette-primary-mainChannel) / 0.2)'
+              }}
+            >
+              {isDiscord
+                ? t('dialog.visit_server')
+                : (type === 'experience'
+                    ? t('dialog.visit_site')
+                    : (name.includes('Designer') ? t('dialog.visit_site') : t('dialog.visit_repo')))}
+            </Button>
+          </Box>
+
+          {/* Community Invite Box (Discord Server invite theme) */}
+          {members && (
+            <DiscordServerInvite
+              name={`${name} Official`}
+              banner={images[0] || ''}
+              members={members}
+              online={online}
+              link={link}
+              t={t}
+            />
+          )}
+
+          {/* Steam / Meta Review Widget */}
+          {steam && (
+            <Box sx={{
+              borderRadius: '16px',
+              border: 1,
+              borderColor: 'divider',
+              p: 2,
+              bgcolor: 'rgba(255,255,255,0.02)',
+              mb: 3
+            }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: 0.5, textTransform: 'uppercase', display: 'block', mb: 1.5 }}>
+                Reviews
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                    Steam Reviews
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: steam.reviews.toLowerCase().includes('mixed') ? 'warning.main' : 'success.main' }}>
+                    {steam.reviews}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                    Metacritic
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    {steam.critic}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          )}
+
+          {/* Details Table */}
+          <Box sx={{
+            borderRadius: '16px',
+            border: 1,
+            borderColor: 'divider',
+            p: 2,
+            bgcolor: 'action.hover'
+          }}>
+            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: 0.5, textTransform: 'uppercase', display: 'block', mb: 1.5 }}>
+              Details
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+              {type === 'experience' && (
+                <>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                      Role
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.primary', textAlign: 'right' }}>
+                      {getLocalized(item.title, language)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                      Duration
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.primary', textAlign: 'right' }}>
+                      {`${item.start} — ${getLocalized(item.end, language)}`}
+                    </Typography>
+                  </Box>
+                </>
+              )}
+              {steam && (
+                <>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                      Developer
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.primary', textAlign: 'right' }}>
+                      {steam.developer}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                      Publisher
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.primary', textAlign: 'right' }}>
+                      {steam.publisher}
+                    </Typography>
+                  </Box>
+                </>
+              )}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                  Platform
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.primary', textAlign: 'right' }}>
+                  {steam ? 'Discord / Steam / PC' : (type === 'project' && item.type === 'dev' ? 'Web / CLI' : 'Discord')}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Close Button overlay removed */}
+    </Box>
   );
 }
 
@@ -883,6 +1385,7 @@ export default function Personal() {
   const { language, t } = useLanguage();
   const [isKofiOpen, setIsKofiOpen] = useState(false);
 
+
   useEffect(() => {
     hasAnimated = true;
   }, []);
@@ -968,58 +1471,69 @@ export default function Personal() {
 
         {/* PROJECTS SECTION */}
         <ScrollReveal>
-          <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold', mb: 4, display: 'flex', alignItems: 'center', gap: 1.2 }}>
+          <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold', mb: 3, display: 'flex', alignItems: 'center', gap: 1.2 }}>
             <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'primary.main', flexShrink: 0 }} />
             <FadeText inline>{t('section.projects')}</FadeText>
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 4, mb: 12 }}>
             {PROJECTS.map((project: any, idx: number) => (
               <ScrollReveal key={project.id} delay={idx * 0.1}>
-                <Card elevation={0} suppressHydrationWarning sx={{
-                  transition: 'all 0.2s',
-                  border: 1,
-                  borderColor: 'divider',
-                  '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
-                  '&:hover img': { transform: 'scale(1.025)' },
-                  borderRadius: '24px',
-                  overflow: 'hidden',
-                  height: '100%',
-                  transform: 'translateZ(0)',
-                  backfaceVisibility: 'hidden',
-                }}>
-                  <CardActionArea href={project.link} target="_blank" sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
-                    <Box sx={{ position: 'relative', p: 1.5, pb: 0 }}>
-                      <Box sx={{ borderRadius: '16px', overflow: 'hidden', aspectRatio: '4/3' }}>
-                        {project.images && project.images.length > 0 ? (
-                           <ProjectImage src={project.images[0]} alt={project.name} />
-                        ) : (
-                          <Box sx={{
-                            width: '100%', height: '100%',
-                            background: 'linear-gradient(135deg, var(--mui-palette-primary-main) 0%, var(--mui-palette-primary-dark, #4a3880) 100%)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 1,
-                          }}>
-                            <MusicNoteIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.3)' }} />
-                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>
-                              {project.name}
-                            </Typography>
-                          </Box>
-                        )}
+                <Link
+                  href={`/details?id=${project.id}&type=project`}
+                  style={{ height: '100%', display: 'block', textDecoration: 'none' }}
+                >
+                  <Card elevation={0} suppressHydrationWarning sx={{
+                    transition: 'all 0.2s',
+                    border: 1,
+                    borderColor: 'divider',
+                    '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+                    '&:hover img': { transform: 'scale(1.025)' },
+                    borderRadius: '24px',
+                    overflow: 'hidden',
+                    height: '100%',
+                    transform: 'translateZ(0)',
+                    backfaceVisibility: 'hidden',
+                  }}>
+                    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+                      <Box sx={{ position: 'relative', p: 1.5, pb: 0 }}>
+                        <Box sx={{ borderRadius: '16px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative', bgcolor: '#0d0d0f' }}>
+                          {project.logo ? (
+                            <img
+                              src={project.logo}
+                              alt={`${project.name} logo`}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            />
+                          ) : project.images && project.images.length > 0 ? (
+                            <ProjectImage src={project.images[0]} alt={project.name} />
+                          ) : (
+                            <Box sx={{
+                              width: '100%', height: '100%',
+                              background: `linear-gradient(135deg, ${project.languageColor || 'var(--mui-palette-primary-main)'} 0%, #1c1921 100%)`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 1.5, p: 2
+                            }}>
+                              <ComputerIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.3)' }} />
+                              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 'bold', textAlign: 'center' }}>
+                                {project.name}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
                       </Box>
+                      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', pt: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2, color: 'text.primary' }}>{project.name}</Typography>
+                          {project.verified && <VerifiedIcon color="primary" sx={{ fontSize: 20 }} />}
+                          <ArrowOutwardIcon sx={{ ml: 'auto', color: 'primary.main', opacity: 0.7, fontSize: 18 }} />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <FadeText>
+                            {getLocalized(project.description, language)}
+                          </FadeText>
+                        </Typography>
+                      </CardContent>
                     </Box>
-                    <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', pt: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>{project.name}</Typography>
-                        {project.verified && <VerifiedIcon color="primary" sx={{ fontSize: 20 }} />}
-                        <ArrowOutwardIcon sx={{ ml: 'auto', color: 'primary.main', opacity: 0.7, fontSize: 18 }} />
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                        <FadeText>
-                          {getLocalized(project.description, language)}
-                        </FadeText>
-                      </Typography>
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
+                  </Card>
+                </Link>
               </ScrollReveal>
             ))}
           </Box>
@@ -1041,25 +1555,27 @@ export default function Personal() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {WORK_EXPERIENCE.filter((job: any) => getLocalized(job.end, language) === t('job.present')).map((job: any, idx: number) => (
                   <ScrollReveal key={job.id} delay={idx * 0.08}>
-                    <Card elevation={0} suppressHydrationWarning sx={{ height: 96, border: 1, borderColor: 'divider', borderRadius: '20px', overflow: 'hidden', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
-                      <CardActionArea href={job.link} target="_blank" sx={{ height: '100%' }}>
-                        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', gap: 2, px: 2.5 }}>
-                          <Avatar sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', width: 48, height: 48, fontSize: '1.1rem', fontWeight: 'bold' }}>
-                            {job.company.charAt(0)}
-                          </Avatar>
-                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
-                                <FadeText inline>{getLocalized(job.title, language)}</FadeText>
-                              </Typography>
-                              {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
+                    <Link href={`/details?id=${job.id}&type=experience`} style={{ width: '100%', textDecoration: 'none' }}>
+                      <Card elevation={0} suppressHydrationWarning sx={{ height: 96, border: 1, borderColor: 'divider', borderRadius: '20px', overflow: 'hidden', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
+                        <Box sx={{ height: '100%' }}>
+                          <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', gap: 2, px: 2.5 }}>
+                            <Avatar src={job.logo} sx={{ bgcolor: job.logo ? 'transparent' : 'primary.main', color: 'primary.contrastText', width: 48, height: 48, fontSize: '1.1rem', fontWeight: 'bold' }}>
+                              {!job.logo && job.company.charAt(0)}
+                            </Avatar>
+                            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2, color: 'text.primary' }}>
+                                  <FadeText inline>{getLocalized(job.title, language)}</FadeText>
+                                </Typography>
+                                {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
+                              </Box>
+                              <Typography variant="body2" color="text.secondary">{job.company}</Typography>
                             </Box>
-                            <Typography variant="body2" color="text.secondary">{job.company}</Typography>
+                            <Chip label={`${job.start} — ${getLocalized(job.end, language)}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem', flexShrink: 0 }} />
                           </Box>
-                          <Chip label={`${job.start} — ${getLocalized(job.end, language)}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem', flexShrink: 0 }} />
                         </Box>
-                      </CardActionArea>
-                    </Card>
+                      </Card>
+                    </Link>
                   </ScrollReveal>
                 ))}
               </Box>
@@ -1074,25 +1590,27 @@ export default function Personal() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {WORK_EXPERIENCE.filter((job: any) => getLocalized(job.end, language) !== t('job.present')).map((job: any, idx: number) => (
                   <ScrollReveal key={job.id} delay={idx * 0.08}>
-                    <Card elevation={0} suppressHydrationWarning sx={{ height: 96, border: 1, borderColor: 'divider', borderRadius: '20px', overflow: 'hidden', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
-                      <CardActionArea href={job.link} target="_blank" sx={{ height: '100%' }}>
-                        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', gap: 2, px: 2.5 }}>
-                          <Avatar sx={{ bgcolor: 'action.hover', color: 'text.secondary', border: '1px solid', borderColor: 'divider', width: 48, height: 48, fontSize: '1.1rem', fontWeight: 'bold' }}>
-                            {job.company.charAt(0)}
-                          </Avatar>
-                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
-                                <FadeText inline>{getLocalized(job.title, language)}</FadeText>
-                              </Typography>
-                              {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
+                    <Link href={`/details?id=${job.id}&type=experience`} style={{ width: '100%', textDecoration: 'none' }}>
+                      <Card elevation={0} suppressHydrationWarning sx={{ height: 96, border: 1, borderColor: 'divider', borderRadius: '20px', overflow: 'hidden', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }}>
+                        <Box sx={{ height: '100%' }}>
+                          <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', gap: 2, px: 2.5 }}>
+                            <Avatar src={job.logo} sx={{ bgcolor: job.logo ? 'transparent' : 'action.hover', color: 'text.secondary', border: job.logo ? 'none' : '1px solid', borderColor: 'divider', width: 48, height: 48, fontSize: '1.1rem', fontWeight: 'bold' }}>
+                              {!job.logo && job.company.charAt(0)}
+                            </Avatar>
+                            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.2, color: 'text.primary' }}>
+                                  <FadeText inline>{getLocalized(job.title, language)}</FadeText>
+                                </Typography>
+                                {job.verified && <VerifiedIcon color="primary" sx={{ fontSize: 16 }} />}
+                              </Box>
+                              <Typography variant="body2" color="text.secondary">{job.company}</Typography>
                             </Box>
-                            <Typography variant="body2" color="text.secondary">{job.company}</Typography>
+                            <Chip label={`${job.start} — ${getLocalized(job.end, language)}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem', flexShrink: 0 }} />
                           </Box>
-                          <Chip label={`${job.start} — ${getLocalized(job.end, language)}`} size="small" variant="outlined" sx={{ borderRadius: '8px', fontWeight: 'bold', fontSize: '0.7rem', flexShrink: 0 }} />
                         </Box>
-                      </CardActionArea>
-                    </Card>
+                      </Card>
+                    </Link>
                   </ScrollReveal>
                 ))}
               </Box>

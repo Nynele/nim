@@ -9,11 +9,11 @@ const theme = createTheme({
     light: {
       palette: {
         primary: {
-          main: '#6750A4',
+          main: '#5F687A',
           contrastText: '#FFFFFF',
         },
         secondary: {
-          main: '#625B71',
+          main: '#687082',
         },
         background: {
           default: '#FEF7FF',
@@ -24,11 +24,11 @@ const theme = createTheme({
     dark: {
       palette: {
         primary: {
-          main: '#D0BCFF',
-          contrastText: '#381E72',
+          main: '#94A3B8',
+          contrastText: '#0F172A',
         },
         secondary: {
-          main: '#CCC2DC',
+          main: '#64748B',
         },
         background: {
           default: '#141218',
