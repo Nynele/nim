@@ -27,7 +27,7 @@ import {
 
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../language-context';
-import { SOCIAL_LINKS, PROJECTS, WORK_EXPERIENCE } from '../data';
+import { SOCIAL_LINKS, WORK_EXPERIENCE } from '../data';
 import dynamic from 'next/dynamic';
 
 const DiscordMessage = dynamic(() => import('../../components/discord-message'), { ssr: false });
@@ -649,7 +649,7 @@ export default function PitchPage() {
                 }}
               >
                 {[...WORK_EXPERIENCE, ...WORK_EXPERIENCE].map((work: any, index: number) => {
-                  const projectImage = PROJECTS.find((p: any) => p.name.includes(work.company) || work.company.includes(p.name))?.images[0];
+                  const logo = work.logo || null;
 
                   return (
                     <Box
@@ -681,12 +681,12 @@ export default function PitchPage() {
                         }
                       }}
                     >
-                      {projectImage && (
+                      {logo && (
                         <Box
                           component="img"
-                          src={projectImage}
+                          src={logo}
                           alt={work.company}
-                          sx={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
+                          sx={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                         />
                       )}
                       <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>

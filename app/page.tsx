@@ -1321,11 +1321,20 @@ function DiscordProfile() {
 
       {/* Body: All Activities */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-        {data.activities && data.activities.length > 0 ? (
-          data.activities.map((activity: any, idx: number) => {
+        {(() => {
+          if (!data.activities || data.activities.length === 0) return null;
+          
+          const uniqueActivities = data.activities.filter((activity: any) => {
             // Skip custom status (already shown in speech bubble)
-            if (activity.type === 4) return null;
+            if (activity.type === 4) return false;
+            return true;
+          }).filter((activity: any, index: number, self: any[]) => {
+            return self.findIndex((a) => a.name === activity.name || (a.application_id && activity.application_id && a.application_id === activity.application_id)) === index;
+          });
 
+          if (uniqueActivities.length === 0) return null;
+
+          return uniqueActivities.map((activity: any, idx: number) => {
             let imageUrl = null;
             if (activity.assets?.large_image) {
               if (activity.assets.large_image.startsWith('mp:external')) {
@@ -1355,8 +1364,8 @@ function DiscordProfile() {
                 </Box>
               </Box>
             );
-          })
-        ) : (
+          });
+        })() || (
           <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', textAlign: 'center', py: 1 }}>
             {t('discord.chilling')}
           </Typography>

@@ -124,6 +124,8 @@ const translations: Record<Language, Record<string, string>> = {
     'audio.track_list': 'Track List',
     'audio.track_progress': 'Song {current} of {total}',
     'audio.previously_played': 'Played Before',
+    'audio.collapse': 'Hide',
+    'audio.expand': 'Show Player',
     // AudioManager status strings
     'audio.status.syncing':          'Syncing with Discord...',
     'audio.status.connecting':       'Connecting to Discord presence...',
@@ -283,6 +285,8 @@ const translations: Record<Language, Record<string, string>> = {
     'audio.track_list': 'Lista de Canciones',
     'audio.track_progress': 'Canción {current} de {total}',
     'audio.previously_played': 'Escuchado antes',
+    'audio.collapse': 'Ocultar',
+    'audio.expand': 'Mostrar reproductor',
     // AudioManager status strings
     'audio.status.syncing':          'Sincronizando con Discord...',
     'audio.status.connecting':       'Conectando a la presencia de Discord...',
@@ -440,6 +444,8 @@ const translations: Record<Language, Record<string, string>> = {
     'audio.reset_search': 'Ripristina Ricerca Video',
     'audio.reset_search_desc': 'Ripristina al primo risultato di ricerca',
     'audio.previously_played': 'Ascoltato prima',
+    'audio.collapse': 'Nascondi',
+    'audio.expand': 'Mostra lettore',
     // AudioManager status strings
     'audio.status.syncing':          'Sincronizzazione con Discord...',
     'audio.status.connecting':       'Connessione alla presenza Discord...',
@@ -597,6 +603,8 @@ const translations: Record<Language, Record<string, string>> = {
     'audio.reset_search': 'Réinitialiser la recherche',
     'audio.reset_search_desc': 'Revenir au premier résultat vidéo',
     'audio.previously_played': 'Écouté avant',
+    'audio.collapse': 'Masquer',
+    'audio.expand': 'Afficher le lecteur',
     // AudioManager status strings
     'audio.status.syncing':          'Synchronisation avec Discord...',
     'audio.status.connecting':       'Connexion à la présence Discord...',
@@ -754,6 +762,8 @@ const translations: Record<Language, Record<string, string>> = {
     'audio.reset_search': 'Videosuche zurücksetzen',
     'audio.reset_search_desc': 'Zum ersten Suchergebnis zurückkehren',
     'audio.previously_played': 'Zuvor gespielt',
+    'audio.collapse': 'Ausblenden',
+    'audio.expand': 'Player anzeigen',
     // AudioManager status strings
     'audio.status.syncing':          'Synchronisierung mit Discord...',
     'audio.status.connecting':       'Verbindung zur Discord-Präsenz...',
@@ -911,6 +921,8 @@ const translations: Record<Language, Record<string, string>> = {
     'audio.reset_search': 'Redefinir Pesquisa de Vídeo',
     'audio.reset_search_desc': 'Redefinir para o primeiro resultado da pesquisa',
     'audio.previously_played': 'Ouvido antes',
+    'audio.collapse': 'Ocultar',
+    'audio.expand': 'Mostrar player',
     // AudioManager status strings
     'audio.status.syncing':          'Sincronizando com o Discord...',
     'audio.status.connecting':       'Conectando à presença do Discord...',

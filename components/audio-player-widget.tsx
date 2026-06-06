@@ -10,7 +10,8 @@ import {
   MusicNote as MusicIcon,
   VolumeUp as VolumeIcon,
   VolumeOff as VolumeOffIcon,
-  GraphicEq as EquallizerIcon
+  GraphicEq as EquallizerIcon,
+  KeyboardDoubleArrowRight as CollapseIcon
 } from '@mui/icons-material';
 import { AudioManager } from '../lib/audio-manager';
 import { useLanguage } from '../app/language-context';
@@ -28,6 +29,7 @@ export default function AudioPlayerWidget() {
   const [coverError, setCoverError] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
   const [prevDiscordTrack, setPrevDiscordTrack] = useState<{ title: string; artist: string; coverUrl: string | null; youtubeVideoId: string | null } | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     setCoverError(false);
@@ -36,6 +38,12 @@ export default function AudioPlayerWidget() {
   useEffect(() => {
     setMounted(true);
     const manager = AudioManager.getInstance();
+    
+    // Load collapsed state from localStorage
+    const savedCollapsed = localStorage.getItem('portfolio_music_player_collapsed');
+    if (savedCollapsed === 'true') {
+      setIsCollapsed(true);
+    }
     
     // Subscribe to player state changes
     const unsubscribe = manager.subscribe(() => {
@@ -62,6 +70,14 @@ export default function AudioPlayerWidget() {
 
     return () => unsubscribe();
   }, []);
+
+  const toggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('portfolio_music_player_collapsed', String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (isPlaying) {
@@ -185,10 +201,10 @@ export default function AudioPlayerWidget() {
         pointerEvents: 'none',
         transition: 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
         '&:hover': {
-          transform: 'translateY(-2px)'
+          transform: isCollapsed ? 'none' : 'translateY(-2px)'
         },
         '&:hover .player-card': {
-          borderColor: 'primary.main',
+          borderColor: isCollapsed ? 'divider' : 'primary.main',
         }
       }}
     >
@@ -209,11 +225,13 @@ export default function AudioPlayerWidget() {
             border: 1,
             borderColor: 'divider',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-            pointerEvents: isPlaying ? 'auto' : 'none',
+            pointerEvents: (isCollapsed || !isPlaying) ? 'none' : 'auto',
             zIndex: 1,
             position: 'relative',
-            transform: isPlaying ? 'translateY(0)' : 'translateY(calc(100% + 6px))',
-            opacity: isPlaying ? 1 : 0,
+            transform: isCollapsed 
+              ? 'translateX(calc(100% + 24px))' 
+              : (isPlaying ? 'translateY(0)' : 'translateY(calc(100% + 6px))'),
+            opacity: isCollapsed ? 0 : (isPlaying ? 1 : 0),
             transition: 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease'
           }}
         >
@@ -350,8 +368,10 @@ export default function AudioPlayerWidget() {
           border: 1,
           borderColor: 'divider',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
-          transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
-          pointerEvents: 'auto',
+          transform: isCollapsed ? 'translateX(calc(100% + 24px))' : 'translateX(0)',
+          opacity: isCollapsed ? 0 : 1,
+          pointerEvents: isCollapsed ? 'none' : 'auto',
+          transition: 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
           zIndex: 2,
           position: 'relative'
         }}
@@ -601,8 +621,104 @@ export default function AudioPlayerWidget() {
               />
             </Box>
           </Box>
+
+          {/* Collapse Button */}
+          <Tooltip title={t('audio.collapse')} arrow>
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCollapse();
+              }}
+              size="small"
+              sx={{
+                p: 0.4,
+                color: 'text.secondary',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.2)',
+                  color: 'primary.main',
+                  transform: 'scale(1.05)'
+                },
+                '&:hover .collapse-arrow': {
+                  transform: 'translateX(2px)'
+                }
+              }}
+            >
+              <CollapseIcon 
+                className="collapse-arrow" 
+                sx={{ 
+                  fontSize: 18, 
+                  transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)' 
+                }} 
+              />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
+
+      {/* Floating Expand Handle */}
+      <Tooltip title={t('audio.expand')} arrow>
+        <IconButton
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleCollapse();
+          }}
+          size="medium"
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            right: 0,
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            bgcolor: 'rgba(var(--mui-palette-background-paperChannel) / 0.7)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            border: 1,
+            borderColor: 'divider',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+            color: isPlaying ? 'primary.main' : 'text.secondary',
+            transform: isCollapsed ? 'scale(1) rotate(0deg)' : 'scale(0) rotate(180deg)',
+            opacity: isCollapsed ? 1 : 0,
+            pointerEvents: isCollapsed ? 'auto' : 'none',
+            transition: 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
+            '&:hover': {
+              bgcolor: 'rgba(var(--mui-palette-background-paperChannel) / 0.85)',
+              transform: isCollapsed ? 'scale(1.08) rotate(0deg)' : 'scale(0) rotate(180deg)',
+              borderColor: 'primary.main'
+            },
+            '&::after': isPlaying ? {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              border: '2px solid var(--mui-palette-primary-main)',
+              animation: 'ripple 1.5s infinite ease-in-out',
+              '@keyframes ripple': {
+                '0%': { transform: 'scale(0.8)', opacity: 1 },
+                '100%': { transform: 'scale(1.3)', opacity: 0 }
+              }
+            } : {}
+          }}
+        >
+          {isPlaying ? (
+            <EquallizerIcon 
+              sx={{ 
+                fontSize: 20,
+                animation: 'pulse 1.2s infinite ease-in-out',
+                '@keyframes pulse': {
+                  '0%, 100%': { transform: 'scale(1)' },
+                  '50%': { transform: 'scale(1.15)' }
+                }
+              }} 
+            />
+          ) : (
+            <MusicIcon sx={{ fontSize: 20 }} />
+          )}
+        </IconButton>
+      </Tooltip>
 
       {/* Track Selection Menu */}
       <Menu

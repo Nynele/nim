@@ -735,10 +735,41 @@ export class AudioManager {
         const ytActivity = data.activities?.find((a: any) => a.name === 'YouTube Music');
         // 2. Check Spotify activity
         const spotifyActive = data.listening_to_spotify && data.spotify;
-        // 3. Check "Most Listened Album" activity as a fallback
-        const mostListenedActivity = (ytActivity || spotifyActive)
+        
+        // 3. Find live "Most Listened Album" activity if present
+        const liveMostListened = data.activities?.find((a: any) => a.name === 'Most Listened Album');
+        
+        // Cache the live "Most Listened Album" activity in localStorage when it is active
+        if (liveMostListened && liveMostListened.details && typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('portfolio-most-listened-cache', JSON.stringify({
+              activity: liveMostListened,
+              timestamp: Date.now()
+            }));
+          } catch (e) {
+            console.warn("Failed to cache most listened album:", e);
+          }
+        }
+
+        // Check "Most Listened Album" activity as a fallback (live first, then cached up to 24h)
+        let mostListenedActivity = (ytActivity || spotifyActive)
           ? null
-          : data.activities?.find((a: any) => a.name === 'Most Listened Album');
+          : liveMostListened;
+
+        if (!ytActivity && !spotifyActive && !mostListenedActivity && typeof window !== 'undefined') {
+          try {
+            const cachedStr = localStorage.getItem('portfolio-most-listened-cache');
+            if (cachedStr) {
+              const cached = JSON.parse(cachedStr);
+              // Valid for 24 hours
+              if (cached && cached.activity && (Date.now() - cached.timestamp < 24 * 60 * 60 * 1000)) {
+                mostListenedActivity = cached.activity;
+              }
+            }
+          } catch (e) {
+            console.warn("Failed to retrieve cached most listened album:", e);
+          }
+        }
 
         if (mostListenedActivity && mostListenedActivity.details) {
           const mlQuery = mostListenedActivity.details;
@@ -929,6 +960,21 @@ export class AudioManager {
             }
           }
         } else {
+          // Keep playing the current music if it's already active and valid, even if presence disappears
+          const currentTitle = this.tracks[0]?.title;
+          const isCurrentTrackValid = currentTitle &&
+            currentTitle !== 'Live Discord Music' &&
+            currentTitle !== 'Syncing...' &&
+            currentTitle !== 'Syncing with Discord...' &&
+            currentTitle !== this.labels.noMusicTitle &&
+            currentTitle !== this.labels.syncErrorTitle &&
+            currentTitle !== 'Search Failed' &&
+            currentTitle !== 'Connecting to Discord presence...';
+
+          if (isCurrentTrackValid && this.isPlaying) {
+            return;
+          }
+
           this.archiveLiveTrack(this.labels.noMusicTitle);
           // Clear playlist if it was loaded
           if (this.loadedPlaylistQuery !== null) {
