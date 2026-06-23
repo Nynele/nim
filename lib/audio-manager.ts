@@ -1023,61 +1023,30 @@ export class AudioManager {
 
   private async searchAndLoadPlaylist(query: string, artistName: string): Promise<boolean> {
     try {
-      const res = await fetch('https://api.invidious.io/instances.json');
-      const instances = await res.json();
+      const url = `/api/playlist?query=${encodeURIComponent(query)}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.warn(`Playlist API failed with status ${res.status}`);
+        return false;
+      }
       
-      const activeInstances = instances
-        .filter((item: any) => item[1].cors && item[1].api && item[1].type === 'https')
-        .map((item: any) => item[1].uri);
-
-      const fallbackInstances = [
-        'https://invidious.projectsegfau.lt',
-        'https://inv.tux.im',
-        'https://invidious.no-logs.com',
-        'https://invidious.lunar.icu'
-      ];
-      
-      const searchList = [...new Set([...fallbackInstances, ...activeInstances])];
-
-      for (const instance of searchList) {
-        try {
-          const searchUrl = `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=playlist`;
-          const response = await fetch(searchUrl, { signal: AbortSignal.timeout(4000) });
-          if (!response.ok) continue;
-          
-          const results = await response.json();
-          if (Array.isArray(results) && results.length > 0) {
-            const playlists = results.filter((item: any) => item.type === 'playlist' && item.playlistId);
-            if (playlists.length > 0) {
-              const playlistId = playlists[0].playlistId;
-              
-              const playlistUrl = `${instance}/api/v1/playlists/${playlistId}`;
-              const playlistRes = await fetch(playlistUrl, { signal: AbortSignal.timeout(4000) });
-              if (!playlistRes.ok) continue;
-              
-              const playlistData = await playlistRes.json();
-              if (playlistData && Array.isArray(playlistData.videos) && playlistData.videos.length > 0) {
-                this.tracks = playlistData.videos.map((v: any, index: number) => ({
-                  id: v.videoId || `track-${index}`,
-                  title: v.title || 'Unknown Title',
-                  artist: v.author || artistName || 'Unknown Artist',
-                  url: '',
-                  youtubeVideoId: v.videoId
-                }));
-                this.loadedPlaylistQuery = query;
-                this.currentTrackIndex = 0;
-                this.youtubeVideoId = this.tracks[0].youtubeVideoId || null;
-                this.notifyListeners();
-                return true;
-              }
-            }
-          }
-        } catch (err) {
-          console.warn(`Playlist search failed on instance ${instance}:`, err);
-        }
+      const data = await res.json();
+      if (data && Array.isArray(data.tracks) && data.tracks.length > 0) {
+        this.tracks = data.tracks.map((t: any) => ({
+          id: t.id,
+          title: t.title,
+          artist: t.artist || artistName || 'Unknown Artist',
+          url: '',
+          youtubeVideoId: t.youtubeVideoId
+        }));
+        this.loadedPlaylistQuery = query;
+        this.currentTrackIndex = 0;
+        this.youtubeVideoId = this.tracks[0].youtubeVideoId || null;
+        this.notifyListeners();
+        return true;
       }
     } catch (e) {
-      console.error("Playlist loading failed:", e);
+      console.error("Local playlist loading failed:", e);
     }
     return false;
   }
