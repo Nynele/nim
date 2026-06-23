@@ -794,12 +794,21 @@ export class AudioManager {
         }
         else if (mostListenedActivity && mostListenedActivity.details) {
           songTitle = mostListenedActivity.details;
-          query = mostListenedActivity.details;
+          let parsedArtistName = mostListenedActivity.state || '';
           
-          const parts = songTitle.split(' - ');
-          if (parts.length > 1) {
-            artistName = parts[1].trim();
+          if (parsedArtistName.toLowerCase().startsWith('by ')) {
+            parsedArtistName = parsedArtistName.substring(3).trim();
           }
+          
+          if (!parsedArtistName) {
+            const parts = songTitle.split(' - ');
+            if (parts.length > 1) {
+              parsedArtistName = parts[1].trim();
+            }
+          }
+          
+          artistName = parsedArtistName;
+          query = `${songTitle} ${artistName}`.trim();
         }
         
         if (query) {
